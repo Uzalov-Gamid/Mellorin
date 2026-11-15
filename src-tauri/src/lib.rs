@@ -11,6 +11,27 @@ pub struct AppState {
     pub subprocess: Arc<SubprocessManager>,
 }
 
+static VOCAB_WRITE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+
+#[tauri::command]
+async fn vocab_set_status(app: AppHandle, word: String, status: String) -> Result<(), String> {
+    let config = Config::load(&app).map_err(|err| err.to_string())?;
+    let _guard = VOCAB_WRITE_LOCK.lock().await;
+    vault::vocab_set_status(std::path::Path::new(&config.vault_path), &word, &status)
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+async fn explain_sentence(
+    app: AppHandle,
+    sentence: String,
+) -> Result<subprocess::Explanation, String> {
+    let config = Config::load(&app).map_err(|err| err.to_string())?;
+    subprocess::explain_sentence(&config, &sentence)
+        .await
+        .map_err(|err| err.to_string())
+}
+
 #[tauri::command]
 fn config_get(app: AppHandle) -> Result<Config, String> {
     Config::load(&app).map_err(|err| err.to_string())
@@ -52,8 +73,7 @@ fn vault_subjects(app: AppHandle) -> Result<Vec<vault::VaultSubject>, String> {
 #[tauri::command]
 async fn vocab_add(app: AppHandle, word: String, sentence: String) -> Result<(), String> {
     let config = Config::load(&app).map_err(|err| err.to_string())?;
-    static WRITE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
-    let _guard = WRITE_LOCK.lock().await;
+    let _guard = VOCAB_WRITE_LOCK.lock().await;
     vault::vocab_add(std::path::Path::new(&config.vault_path), &word, &sentence)
         .map_err(|err| err.to_string())
 }
@@ -96,6 +116,8 @@ pub fn run() {
             config_get,
             vault_subjects,
             vocab_add,
+            vocab_set_status,
+            explain_sentence,
             translate,
             subprocess_start,
             subprocess_send,

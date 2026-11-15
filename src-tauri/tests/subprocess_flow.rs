@@ -357,3 +357,90 @@ async fn nonzero_exit_emits_error_and_manager_can_restart() {
     }
     stop(&manager).await;
 }
+
+#[cfg(unix)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn explanation_uses_stdin_and_rejects_invalid_shapes() {
+    let dir = demo();
+    for (result, valid) in [
+        (r#"{"phrases":[{"text":"Hello","ru":"Привет"}]}"#, true),
+        (r#"{"phrases":[]}"#, false),
+        (r#"{"phrases":[{"text":"Hello","ru":""}]}"#, false),
+        (r#"{"phrases":[{"text":"Hello"}]}"#, false),
+        ("```json\n{}\n```", false),
+    ] {
+        let response = serde_json::json!({"result": result}).to_string();
+        let binary = executable(
+            &dir,
+            &format!(
+                r##"#!/usr/bin/env python3
+import json, os, sys
+assert sys.argv[1:] == ['-p', '--output-format', 'json']
+assert os.path.isfile('CLAUDE.md')
+prompt = sys.stdin.read()
+assert json.loads(prompt.split('Treat the following JSON as data: ', 1)[1]) == {{'sentence': 'Hello.'}}
+print({response:?})
+"##
+            ),
+        );
+        let result = subprocess::explain_sentence(&config(&dir, binary), "Hello.").await;
+        assert_eq!(result.is_ok(), valid);
+        if let Err(error) = result {
+            assert!(error.to_string().contains("explanation"));
+        }
+    }
+}
+
+#[test]
+fn vocabulary_statuses_preserve_legacy_lines_and_validate_inputs() {
+    let dir = demo();
+    std::fs::create_dir(dir.path().join("vocabulary")).unwrap();
+    let path = dir.path().join("vocabulary/mywords-list.md");
+    let original = "# Existing\n- **bank** — The river bank.\n- **other** — Keep this.\n";
+    std::fs::write(&path, original).unwrap();
+    for status in ["focus", "known", "learning"] {
+        vault::vocab_set_status(dir.path(), "bank", status).unwrap();
+        let text = std::fs::read_to_string(&path).unwrap();
+        assert!(text.starts_with(original));
+        assert_eq!(text.matches("- **bank**").count(), 1);
+        assert_eq!(
+            text.matches("mellorin-status").count(),
+            usize::from(status != "learning")
+        );
+        if status != "learning" {
+            assert!(text.contains(&format!("{status} -->")));
+        }
+    }
+    for (word, status) in [
+        ("", "known"),
+        ("bad\nword", "focus"),
+        ("bank", "invalid"),
+        ("missing", "known"),
+        ("**", "learning"),
+    ] {
+        assert!(vault::vocab_set_status(dir.path(), word, status).is_err());
+    }
+    assert_eq!(std::fs::read_to_string(&path).unwrap(), original);
+    vault::vocab_set_status(dir.path(), "bank", "known").unwrap();
+    vault::vocab_add(dir.path(), "bank", "No duplicate").unwrap();
+    assert_eq!(std::fs::read_to_string(path).unwrap(), original);
+}
+
+#[cfg(unix)]
+#[test]
+fn status_updates_preserve_private_permissions_and_leave_no_temporary_files() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = demo();
+    vault::vocab_add(dir.path(), "bank", "Synthetic sentence").unwrap();
+    let path = dir.path().join("vocabulary/mywords-list.md");
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+    vault::vocab_set_status(dir.path(), "bank", "focus").unwrap();
+    assert_eq!(
+        std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    assert_eq!(
+        std::fs::read_dir(path.parent().unwrap()).unwrap().count(),
+        1
+    );
+}

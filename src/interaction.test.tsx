@@ -38,11 +38,11 @@ vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn((event: string, callback
 }) }));
 import { Chat } from "./Chat";
 import { useJery } from "./useJery";
-import { TextViewer } from "./TextViewer";
+import { WordPopup, TextViewer } from "./TextViewer";
 
 type Props = {
   children?: ReactNode; className?: string; disabled?: boolean;
-  onClick?: () => void | Promise<void>;
+  onClick?: (event?: { stopPropagation: () => void }) => void | Promise<void>;
   onChange?: (event: { target: { value: string } }) => void;
   onKeyDown?: (event: { key: string; shiftKey: boolean; nativeEvent: { isComposing: boolean }; preventDefault: () => void }) => void;
 };
@@ -131,7 +131,7 @@ describe("TextViewer IPC interactions", () => {
     tree = render(TextViewer);
     await find(tree, e => e.type === "button" && content(e) === "Читать →").props.onClick?.();
     tree = render(TextViewer);
-    await find(tree, e => e.type === "button" && content(e) === "Hello").props.onClick?.();
+    await find(tree, e => e.type === "button" && content(e) === "Hello").props.onClick?.({ stopPropagation: vi.fn() });
     tree = render(TextViewer);
     const popup = find(tree, e => typeof e.type === "function");
     const viewerSlots = runtime.slots;
@@ -164,7 +164,7 @@ describe("Word popup lifecycle", () => {
     tree = render(TextViewer);
     await find(tree, e => e.type === "button" && content(e) === "Читать →").props.onClick?.();
     tree = render(TextViewer);
-    await find(tree, e => e.type === "button" && content(e) === "Hello").props.onClick?.();
+    await find(tree, e => e.type === "button" && content(e) === "Hello").props.onClick?.({ stopPropagation: vi.fn() });
     const popup = find(render(TextViewer), e => typeof e.type === "function");
     runtime.slots = [];
     let resolveSave: () => void = () => {};
@@ -206,5 +206,77 @@ describe("JERY shell actions", () => {
     await jery!.sendText("two"); connected(); await first;
     expect(runtime.invoke.mock.calls.filter(call => call[0] === "subprocess_start")).toHaveLength(1);
     expect(runtime.invoke.mock.calls.filter(call => call[0] === "subprocess_send")).toHaveLength(1);
+  });
+});
+
+
+describe("Reading design interactions", () => {
+  it("numbers sentences, keeps unknown progress neutral and requests a phrase breakdown", async () => {
+    runtime.invoke.mockImplementation(() => Promise.resolve({ phrases: [{ text: "Hello world", ru: "Привет мир" }] }));
+    let tree = render(TextViewer);
+    find(tree, e => e.type === "textarea").props.onChange?.({ target: { value: "Hello world. Next sentence!" } });
+    tree = render(TextViewer);
+    await find(tree, e => e.type === "button" && content(e) === "Читать →").props.onClick?.();
+    tree = render(TextViewer);
+    expect(content(tree)).toContain("уровень —");
+    expect(content(tree)).toContain("шаг — из 9");
+    expect(elements(tree).filter(e => e.type === "sup")).toHaveLength(2);
+    await find(tree, e => e.type === "button" && content(e) === "1").props.onClick?.();
+    render(TextViewer); await flush(); tree = render(TextViewer);
+    expect(runtime.invoke).toHaveBeenCalledWith("explain_sentence", { sentence: "Hello world." });
+    expect(content(tree)).toContain("Привет мир");
+    expect(elements(tree).some(e => e.props.className === "sentence sentence-selected")).toBe(true);
+  });
+  it("persists known status after adding the entry and handles unavailable speech", async () => {
+    runtime.invoke.mockImplementation((command: string) => Promise.resolve(command === "translate" ? "Привет" : undefined));
+    const saved = vi.fn();
+    const component = () => WordPopup({ word: "Hello", sentence: "Hello world.", onSaved: saved, onClose: vi.fn() });
+    let tree = render(component); await flush(); tree = render(component);
+    await find(tree, e => e.type === "button" && content(e) === "known").props.onClick?.();
+    expect(runtime.invoke.mock.calls.slice(-2)).toEqual([["vocab_add", { word: "Hello", sentence: "Hello world." }], ["vocab_set_status", { word: "Hello", status: "known" }]]);
+    expect(saved).toHaveBeenCalledWith("known");
+    tree = render(component);
+    await find(tree, e => e.type === "button" && content(e).includes("Послушать")).props.onClick?.();
+    expect(content(render(component))).toContain("Английский голос недоступен");
+    expect(content(render(component))).toContain("добавлено в vocabulary/mywords-list.md");
+  });
+});
+
+describe("Reading failure handling", () => {
+  it("shows explanation failures without changing the reading text", async () => {
+    runtime.invoke.mockRejectedValue(new Error("invalid JSON"));
+    let tree = render(TextViewer);
+    find(tree, e => e.type === "textarea").props.onChange?.({ target: { value: "Keep this." } });
+    tree = render(TextViewer);
+    await find(tree, e => e.type === "button" && content(e) === "Читать →").props.onClick?.();
+    tree = render(TextViewer);
+    await find(tree, e => e.type === "button" && content(e) === "1").props.onClick?.();
+    render(TextViewer); await flush(); tree = render(TextViewer);
+    expect(content(tree)).toContain("Не удалось разобрать: Error: invalid JSON");
+    expect(content(tree)).toContain("Keep this.");
+    runtime.invoke.mockResolvedValue({ phrases: [{ text: "Keep this", ru: "Сохрани это" }] });
+    await find(tree, e => e.type === "button" && content(e) === "Повторить разбор").props.onClick?.();
+    render(TextViewer); await flush();
+    expect(content(render(TextViewer))).toContain("Сохрани это");
+  });
+  it("does not report a status saved when the status command fails", async () => {
+    runtime.invoke.mockImplementation((command: string) => command === "vocab_set_status" ? Promise.reject("write failed") : Promise.resolve("Привет"));
+    const saved = vi.fn();
+    const component = () => WordPopup({ word: "Hello", sentence: "Hello.", onSaved: saved, onClose: vi.fn() });
+    const tree = render(component);
+    await find(tree, e => e.type === "button" && content(e) === "focus").props.onClick?.();
+    expect(saved).not.toHaveBeenCalled();
+    expect(content(render(component))).toContain("Не удалось сохранить: write failed");
+  });
+  it("uses an available English voice for pronunciation", async () => {
+    const voice = { lang: "en-GB" };
+    const speak = vi.fn();
+    vi.stubGlobal("window", { speechSynthesis: { getVoices: () => [{ lang: "ru-RU" }, voice], cancel: vi.fn(), speak } });
+    vi.stubGlobal("SpeechSynthesisUtterance", class { text: string; constructor(text: string) { this.text = text; } });
+    try {
+      const tree = render(() => WordPopup({ word: "Hello", sentence: "Hello.", onSaved: vi.fn(), onClose: vi.fn() }));
+      await find(tree, e => e.type === "button" && content(e).includes("Послушать")).props.onClick?.();
+      expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: "Hello", lang: "en-GB", voice }));
+    } finally { vi.unstubAllGlobals(); }
   });
 });

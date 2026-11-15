@@ -24,3 +24,8 @@ export const onExit = (handler: () => void): Promise<UnlistenFn> => listen<null>
 
 export interface VaultSubject { name: string; skills: string[] }
 export const vaultSubjects = (): Promise<VaultSubject[]> => invoke<VaultSubject[]>("vault_subjects");
+
+export interface Explanation { phrases: { text: string; ru: string }[] }
+export type VocabStatus = "learning" | "focus" | "known";
+export const explainSentence = (sentence: string): Promise<Explanation> => invoke<Explanation>("explain_sentence", { sentence });
+export const vocabSetStatus = (word: string, status: VocabStatus): Promise<void> => invoke<void>("vocab_set_status", { word, status });

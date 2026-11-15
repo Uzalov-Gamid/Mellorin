@@ -3,7 +3,7 @@ use std::path::Path;
 
 pub fn vocab_add(vault: &Path, word: &str, sentence: &str) -> anyhow::Result<()> {
     anyhow::ensure!(
-        !word.is_empty() && !word.contains(['\n', '\r']),
+        !word.trim().is_empty() && !word.contains(['\n', '\r', '*', '<', '>']),
         "word must be a nonempty single line"
     );
     anyhow::ensure!(
@@ -20,7 +20,7 @@ pub fn vocab_add(vault: &Path, word: &str, sentence: &str) -> anyhow::Result<()>
     };
     let prefix = format!("- **{word}** — ");
     if contents.lines().any(|line| line.starts_with(&prefix)) {
-        return Ok(());
+        return vocab_set_status(vault, word, "learning");
     }
     let mut file = std::fs::OpenOptions::new()
         .create(true)
@@ -30,6 +30,41 @@ pub fn vocab_add(vault: &Path, word: &str, sentence: &str) -> anyhow::Result<()>
         writeln!(file)?;
     }
     writeln!(file, "{prefix}{sentence}")?;
+    Ok(())
+}
+
+// Legacy entries without metadata mean learning. Metadata never changes the entry line.
+pub fn vocab_set_status(vault: &Path, word: &str, status: &str) -> anyhow::Result<()> {
+    anyhow::ensure!(
+        !word.trim().is_empty() && !word.contains(['\n', '\r', '*', '<', '>']),
+        "word must be a nonempty plain single line"
+    );
+    anyhow::ensure!(
+        ["learning", "focus", "known"].contains(&status),
+        "invalid vocabulary status: expected learning, focus or known"
+    );
+    let path = vault.join("vocabulary/mywords-list.md");
+    let contents = std::fs::read_to_string(&path)?;
+    anyhow::ensure!(
+        contents
+            .lines()
+            .any(|line| line.starts_with(&format!("- **{word}** — "))),
+        "word is not in vocabulary; add it first"
+    );
+    let prefix = format!("<!-- mellorin-status {} ", serde_json::to_string(word)?);
+    let mut updated = String::new();
+    for line in contents.split_inclusive('\n') {
+        if !line.starts_with(&prefix) {
+            updated.push_str(line);
+        }
+    }
+    if status != "learning" {
+        if !updated.ends_with('\n') {
+            updated.push('\n');
+        }
+        updated.push_str(&format!("{prefix}{status} -->\n"));
+    }
+    replace_file(&path, updated.as_bytes())?;
     Ok(())
 }
 
@@ -111,4 +146,30 @@ mod subject_tests {
             .unwrap()
             .is_empty());
     }
+}
+
+// Write beside the original and rename only after the complete replacement is durable.
+fn replace_file(path: &Path, contents: &[u8]) -> anyhow::Result<()> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let temp = path.with_file_name(format!(
+        ".mywords-list.{}.{}.tmp",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temp)?;
+    let result = (|| -> anyhow::Result<()> {
+        file.set_permissions(std::fs::metadata(path)?.permissions())?;
+        file.write_all(contents)?;
+        file.sync_all()?;
+        std::fs::rename(&temp, path)?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&temp);
+    }
+    result
 }
