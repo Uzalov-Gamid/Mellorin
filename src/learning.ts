@@ -37,3 +37,5 @@ export function useVaultState() {
   }, []);
   return { snapshot, loading };
 }
+
+export const setTaskDone = (id: string, done: boolean, expectedDate: string): Promise<void> => invoke("today_set_done", { id, done, expectedDate });

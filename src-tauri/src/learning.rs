@@ -237,6 +237,35 @@ pub fn init_protocol(vault: &Path, prompt: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn set_task_done(
+    vault: &Path,
+    id: &str,
+    done: bool,
+    expected_date: &str,
+) -> anyhow::Result<()> {
+    let path = vault::resolve_inside(vault, ".mellorin/today.json")?;
+    let mut today = validate(
+        serde_json::from_str(&vault::read_text(vault, ".mellorin/today.json")?)?,
+        true,
+    )?;
+    ensure!(
+        today["date"].as_str() == Some(expected_date),
+        "task date changed; refresh before updating"
+    );
+    let task = today["tasks"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|task| task["id"].as_str() == Some(id))
+        .context("task no longer exists")?;
+    task["done"] = Value::Bool(done);
+    if !done {
+        task.as_object_mut().unwrap().remove("completedAt");
+    }
+    let today = validate(today, true)?;
+    vault::replace_file(&path, serde_json::to_string_pretty(&today)?.as_bytes())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -278,5 +307,29 @@ mod tests {
         let duplicate = invalid["tasks"][0].clone();
         invalid["tasks"].as_array_mut().unwrap().push(duplicate);
         assert!(validate(invalid, true).is_err());
+    }
+}
+
+#[cfg(test)]
+mod task_tests {
+    use super::*;
+    use serde_json::json;
+    #[test]
+    fn updates_only_requested_task_and_rejects_stale_or_missing_ids() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(dir.path().join(".mellorin")).unwrap();
+        let path = dir.path().join(".mellorin/today.json");
+        let original = json!({"version":1,"date":"2026-11-15","tasks":[{"id":"one","title":"Demo","subject":"english","done":false},{"id":"two","title":"Keep","subject":"c","done":true,"completedAt":"11:00"}]});
+        std::fs::write(&path, original.to_string()).unwrap();
+        assert!(set_task_done(dir.path(), "one", true, "2026-11-14").is_err());
+        assert!(set_task_done(dir.path(), "missing", true, "2026-11-15").is_err());
+        assert_eq!(
+            serde_json::from_str::<Value>(&std::fs::read_to_string(&path).unwrap()).unwrap(),
+            original
+        );
+        set_task_done(dir.path(), "one", true, "2026-11-15").unwrap();
+        let actual: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+        assert_eq!(actual["tasks"][0]["done"], true);
+        assert_eq!(actual["tasks"][1], original["tasks"][1]);
     }
 }
