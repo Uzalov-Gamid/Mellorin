@@ -213,10 +213,12 @@ fn vault_subjects(app: AppHandle) -> Result<Vec<vault::VaultSubject>, String> {
 }
 
 #[tauri::command]
-async fn vocab_add(app: AppHandle, word: String, sentence: String) -> Result<(), String> {
+async fn vocab_add(app: AppHandle, word: String, sentence: String) -> Result<String, String> {
     let config = Config::load(&app).map_err(|err| err.to_string())?;
     let _guard = VOCAB_WRITE_LOCK.lock().await;
     vault::vocab_add(std::path::Path::new(&config.vault_path), &word, &sentence)
+        .map_err(|err| err.to_string())?;
+    vault::vocabulary_source(std::path::Path::new(&config.vault_path))
         .map_err(|err| err.to_string())
 }
 

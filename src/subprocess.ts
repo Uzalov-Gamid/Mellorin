@@ -18,7 +18,7 @@ export const sendMessage = (message: string): Promise<void> => invoke<void>("sub
 export const stopSubprocess = (): Promise<void> => invoke<void>("subprocess_stop");
 export const getStatus = (): Promise<boolean> => invoke<boolean>("subprocess_status");
 export const translate = (word: string, sentence: string): Promise<string> => invoke<string>("translate", { word, sentence });
-export const vocabAdd = (word: string, sentence: string): Promise<void> => invoke<void>("vocab_add", { word, sentence });
+export const vocabAdd = (word: string, sentence: string): Promise<string> => invoke<string>("vocab_add", { word, sentence });
 export const onChatDelta = (handler: (payload: ChatDelta) => void): Promise<UnlistenFn> => listen<ChatDelta>("chat-delta", e => handler(e.payload));
 export const onChatDone = (handler: () => void): Promise<UnlistenFn> => listen<ChatDone>("chat-done", () => handler());
 export const onChatError = (handler: (payload: ChatError) => void): Promise<UnlistenFn> => listen<ChatError>("chat-error", e => handler(e.payload));

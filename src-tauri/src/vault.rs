@@ -37,6 +37,10 @@ fn valid_word(word: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub fn vocabulary_source(vault: &Path) -> anyhow::Result<String> {
+    Ok(vocab_path(vault)?.1.into())
+}
+
 fn vocab_path(vault: &Path) -> anyhow::Result<(PathBuf, &'static str)> {
     let relative = if match vault.join(CANONICAL_VOCAB).symlink_metadata() {
         Ok(_) => true,
