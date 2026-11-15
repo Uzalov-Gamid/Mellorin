@@ -19,6 +19,10 @@ describe("safe Obsidian notes", () => {
     expect(html).toContain('<table>'); expect(html).toContain('notes-callout-warning'); expect(html).toContain('Ordinary quote');
     expect(html).toContain('disabled=""'); expect(html).toContain('¹ ² ³'); expect(html).toContain('[[not-a-link]]'); expect(html).toContain('href="tag:');
   });
+  it("preserves callout body when the marker has no custom title", () => {
+    const html = renderToStaticMarkup(<ReactMarkdown remarkPlugins={[obsidian]}>{"> [!note]\n> Body remains content"}</ReactMarkdown>);
+    expect(html).toContain("ЗАМЕТКА"); expect(html).toContain("Body remains content");
+  });
   it("drops raw HTML and gives duplicate headings stable distinct IDs", () => {
     const html = renderToStaticMarkup(<ReactMarkdown remarkPlugins={[obsidian]} skipHtml>{'# Same\n\n# Same\n\n<script>alert(1)</script>\n\n<img src=x onerror=alert(1)>'}</ReactMarkdown>);
     expect(html).not.toContain('<script'); expect(html).not.toContain('<img');
@@ -35,5 +39,12 @@ describe("safe Obsidian notes", () => {
   });
   it("derives backlinks from links, excluding code and image references", () => {
     expect(analyze('`[[no]]`\n\n![[figure.png]]\n\n[[a]] and [b](../b.md)').links).toEqual(['wiki:a', '../b.md']);
+    expect(analyze('[source][ref]\n\n[ref]: errors.md').links).toEqual(['errors.md']);
   });
+  it("limits automatic local media reads per note", () => {
+    const html = renderToStaticMarkup(<ReactMarkdown remarkPlugins={[obsidian]} urlTransform={value => value}>{Array.from({ length: 20 }, (_, i) => `![figure](figure-${i}.png)`).join("\n\n")}</ReactMarkdown>);
+    expect((html.match(/<img /g) || []).length).toBe(16);
+    expect(html).toContain("Лимит вложений на заметку: 16");
+  });
+
 });

@@ -29,6 +29,8 @@ function Attachment({ path, label }: { path: string; label: string }) {
 
 export function Notes({ subject }: { subject: string; skill?: string }) {
   const [catalog, setCatalog] = useState<Catalog>(); const [path, setPath] = useState("");
+  const [allSources, setAllSources] = useState(false);
+  const [activated, setActivated] = useState(() => typeof window !== "undefined" && window.location.hash.replace(/^#\/?/, "") === `${subject}/notes`);
   const [query, setQuery] = useState(""); const [error, setError] = useState(""); const [loading, setLoading] = useState(true);
   const [attachment, setAttachment] = useState<{ path: string; label: string }>();
   const [fragment, setFragment] = useState(""); const article = useRef<HTMLElement>(null);
@@ -37,9 +39,15 @@ export function Notes({ subject }: { subject: string; skill?: string }) {
     try { setCatalog(await loadNotes(refresh)); } catch { setError("Не удалось прочитать конспекты. Проверь хранилище и лимиты чтения."); }
     finally { setLoading(false); }
   }
-  useEffect(() => { void reload(); }, []);
+  useEffect(() => {
+    const changed = () => { if (window.location.hash.replace(/^#\/?/, "") === `${subject}/notes`) setActivated(true); };
+    window.addEventListener("hashchange", changed);
+    return () => window.removeEventListener("hashchange", changed);
+  }, [subject]);
+  useEffect(() => { if (activated) void reload(); }, [activated]);
   const notes = catalog?.notes || [];
-  const sources = notes.filter(note => note.path.toLowerCase().startsWith(`learning/${subject.toLowerCase()}/`));
+  const subjectSources = notes.filter(note => note.path.toLowerCase().startsWith(`learning/${subject.toLowerCase()}/`));
+  const sources = allSources ? notes : subjectSources;
   const selected = notes.find(note => note.path === path) || sources[0];
   const parsed = useMemo(() => selected ? frontmatter(selected.markdown) : undefined, [selected]);
   const metadata = useMemo(() => notes.map(note => ({ ...note, ...analyze(note.markdown) })), [catalog]); // bounded catalog, one parse per refresh
@@ -48,7 +56,7 @@ export function Notes({ subject }: { subject: string; skill?: string }) {
     try { return resolveLink(note.path, link, catalog.files).path === selected.path; } catch { return false; }
   })), [metadata, selected, catalog]);
   useEffect(() => {
-    if (!fragment) { if (article.current) article.current.scrollTop = 0; return; }
+    if (!fragment) { if (selected && window.location.hash.replace(/^#\/?/, "") === `${subject}/notes`) article.current?.scrollIntoView({ block: "start" }); return; }
     const id = slug(fragment);
     const element = Array.from(article.current?.querySelectorAll("[id]") || []).find(el => el.id === id || el.id === fragment);
     if (element) element.scrollIntoView({ block: "start" });
@@ -65,7 +73,7 @@ export function Notes({ subject }: { subject: string; skill?: string }) {
   }
   return <section className="notes-screen" aria-label="Конспекты">
     <article className="notes-paper" ref={article}>
-      <div className="notes-breadcrumb">{subject === "english" ? "English" : subject} › Конспекты{selected ? ` › ${selected.path.split("/").slice(-2, -1)[0] || ""}` : ""}</div>
+      <div className="notes-breadcrumb">{selected?.path.startsWith("Learning/") ? selected.path.split("/")[1] : subject === "english" ? "English" : subject} › Конспекты{selected ? ` › ${selected.path.split("/").slice(-2, -1)[0] || ""}` : ""}</div>
       {loading && <p role="status">Загрузка конспектов…</p>}
       {error && <p className="notes-error" role="alert">{error}</p>}
       {attachment && <div className="notes-attachment"><Attachment path={attachment.path} label={attachment.label} /><button className="notes-reload" onClick={() => setAttachment(undefined)}>Закрыть вложение</button></div>}
@@ -92,7 +100,7 @@ export function Notes({ subject }: { subject: string; skill?: string }) {
       <div><div className="notes-cap">◆ ОГЛАВЛЕНИЕ</div>{outline.length ? outline.map(item => <button key={item.id} className="notes-outline" style={{ paddingLeft: `${2 + Math.min(item.depth - 1, 4) * 12}px` }} onClick={() => { setFragment(item.id); setError(""); }}>{item.title}</button>) : <p>Нет заголовков</p>}</div>
       <div><div className="notes-cap">◆ ОБРАТНЫЕ ССЫЛКИ</div>{backlinks.length ? backlinks.map(note => <button className="notes-link notes-source" key={note.path} onClick={() => { setPath(note.path); setFragment(""); setError(""); }}>{note.path.split("/").pop()}</button>) : <p>Нет обратных ссылок</p>}</div>
       {selected && <div className="notes-file">Файл: {selected.path}<br />Только чтение</div>}
-      <div className="notes-sources"><div className="notes-cap">◆ КОНСПЕКТЫ · {sources.length}</div><input aria-label="Поиск конспекта" placeholder="Найти конспект…" value={query} onChange={event => setQuery(event.target.value)} />{sources.filter(note => note.path.toLowerCase().includes(query.toLowerCase())).map(note => <button key={note.path} className="notes-source notes-link" aria-current={note.path === selected?.path ? "page" : undefined} onClick={() => { setPath(note.path); setFragment(""); setError(""); }}>{note.path.split("/").pop()}</button>)}<button className="notes-reload" disabled={loading} onClick={() => void reload(true)}>⟳ Перечитать файлы</button></div>
+      <div className="notes-sources"><div className="notes-cap">◆ КОНСПЕКТЫ · {sources.length}</div><button className="notes-scope" aria-pressed={allSources} onClick={() => setAllSources(value => !value)}>{allSources ? "Всё хранилище" : "Текущий предмет"} ▾</button><input aria-label="Поиск конспекта" placeholder="Найти конспект…" value={query} onChange={event => setQuery(event.target.value)} />{sources.filter(note => note.path.toLowerCase().includes(query.toLowerCase())).map(note => <button key={note.path} title={note.path} className="notes-source notes-link" aria-current={note.path === selected?.path ? "page" : undefined} onClick={() => { setPath(note.path); setFragment(""); setError(""); }}>{note.path.split("/").pop()}</button>)}<button className="notes-reload" disabled={loading} onClick={() => void reload(true)}>⟳ Перечитать файлы</button></div>
     </aside>
   </section>;
 }

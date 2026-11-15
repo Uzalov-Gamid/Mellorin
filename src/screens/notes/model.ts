@@ -3,7 +3,7 @@ import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
 import { visit } from "unist-util-visit";
 import { parseDocument } from "yaml";
-import type { Root, Text, Link, Image, Heading, Blockquote } from "mdast";
+import type { Root, Text, Link, Image, Heading, Blockquote, Definition, LinkReference } from "mdast";
 
 export interface Note { path: string; markdown: string }
 export interface Catalog { notes: Note[]; files: string[] }
@@ -54,6 +54,10 @@ export function obsidian() {
         return index + nodes.length;
       }
     });
+    let images = 0;
+    visit(tree, ["image", "imageReference"], (_node, index, parent) => {
+      if (++images > 16 && parent && index !== undefined) parent.children[index] = { type: "text", value: "[Лимит вложений на заметку: 16]" };
+    });
     const ids = new Map<string, number>();
     visit(tree, "heading", (node: Heading) => {
       const base = slug(textOf(node)); const count = ids.get(base) || 0; ids.set(base, count + 1);
@@ -62,7 +66,7 @@ export function obsidian() {
     visit(tree, "blockquote", (node: Blockquote) => {
       const first = node.children[0];
       if (first?.type !== "paragraph" || first.children[0]?.type !== "text") return;
-      const text = first.children[0]; const match = /^\[!([\w-]+)\]([+-])?\s*([^\n]*)(?:\n|$)/.exec(text.value);
+      const text = first.children[0]; const match = /^\[!([\w-]+)\]([+-])?[ \t]*([^\n]*)(?:\n|$)/.exec(text.value);
       if (!match) return;
       const labels: Record<string, string> = { note: "ЗАМЕТКА", tip: "СОВЕТ", warning: "ЛОВУШКА", danger: "ВАЖНО", info: "ИНФОРМАЦИЯ", quote: "ЦИТАТА" };
       const kind = ["warning", "danger", "tip", "note", "info", "quote"].includes(match[1].toLowerCase()) ? match[1].toLowerCase() : "note";
@@ -78,6 +82,9 @@ export function analyze(markdown: string) {
   const processor = unified().use(remarkParse).use(remarkGfm).use(obsidian);
   const tree = processor.runSync(processor.parse(body)) as Root;
   const outline: OutlineItem[] = []; const links: string[] = [];
+  const definitions = new Map<string, string>();
+  visit(tree, "definition", (node: Definition) => { if (!definitions.has(node.identifier.toLowerCase())) definitions.set(node.identifier.toLowerCase(), node.url); });
+  visit(tree, "linkReference", (node: LinkReference) => { const url = definitions.get(node.identifier.toLowerCase()); if (url) links.push(url); });
   visit(tree, "heading", (node: Heading) => { outline.push({ title: textOf(node), depth: node.depth, id: String(node.data?.hProperties?.id || "") }); });
   visit(tree, "link", (node: Link) => { if (!node.url.startsWith("tag:")) links.push(node.url); });
   return { outline, links };

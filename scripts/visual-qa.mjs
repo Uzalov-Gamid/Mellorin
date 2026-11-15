@@ -89,6 +89,22 @@ try {
       await writeFile(join(out,`${key}-side-by-side.png`),PNG.sync.write(side));
       const findings=await page.evaluate(audit);
       report.screens.push({name,width,collapsed,differentPixels:pixels,differencePercent:100*pixels/(width*900),findings,errors});
+      if(name==='Note' && width===1440 && !collapsed) {
+        const checks=[];
+        await page.locator('.notes-markdown').getByRole('button',{name:'errors',exact:true}).click();
+        await page.getByRole('heading',{name:'Ошибки',exact:true}).waitFor(); checks.push('wikilink opens the resolved vault note');
+        await page.locator('.notes-sources').getByRole('button',{name:'topic-14-past-simple-regular.md',exact:true}).click();
+        await page.getByRole('heading',{name:'Past Simple: правильные глаголы',exact:true}).waitFor(); checks.push('source selection restores the requested note');
+        await page.evaluate(()=>{window.location.hash='english/reading';});
+        await page.getByRole('textbox',{name:'Текст для чтения',exact:true}).fill(reading);
+        await page.getByRole('button',{name:'Читать →',exact:true}).click();
+        const paper=page.locator('.reading-paper'); await paper.waitFor(); const retained=await paper.innerText();
+        await page.evaluate(()=>{window.location.hash='english/notes';});
+        await page.getByRole('heading',{name:'Past Simple: правильные глаголы',exact:true}).waitFor(); checks.push('notes selection survives navigation');
+        await page.evaluate(()=>{window.location.hash='english/reading';}); await paper.waitFor();
+        if(await paper.innerText()!==retained)throw Error('Notes navigation reset the Reading panel'); checks.push('Reading panel retains its study text across Notes navigation');
+        report.screens[report.screens.length-1].interactionChecks=checks;
+      }
       await context.close();
     }
   }

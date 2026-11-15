@@ -20,14 +20,23 @@ pub struct AppState {
 }
 
 #[tauri::command]
-fn notes_catalog(app: AppHandle) -> Result<notes::Catalog, String> {
+async fn notes_catalog(app: AppHandle) -> Result<notes::Catalog, String> {
     let config = Config::load(&app).map_err(|_| "Не удалось прочитать настройки".to_string())?;
-    notes::catalog(std::path::Path::new(&config.vault_path)).map_err(|e| e.to_string())
+    tauri::async_runtime::spawn_blocking(move || {
+        notes::catalog(std::path::Path::new(&config.vault_path)).map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|_| "Не удалось прочитать конспекты".to_string())?
 }
 #[tauri::command]
-fn notes_attachment(app: AppHandle, path: String) -> Result<attachments::Attachment, String> {
+async fn notes_attachment(app: AppHandle, path: String) -> Result<attachments::Attachment, String> {
     let config = Config::load(&app).map_err(|_| "Не удалось прочитать настройки".to_string())?;
-    attachments::read(std::path::Path::new(&config.vault_path), &path).map_err(|e| e.to_string())
+    tauri::async_runtime::spawn_blocking(move || {
+        attachments::read(std::path::Path::new(&config.vault_path), &path)
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|_| "Не удалось прочитать вложение".to_string())?
 }
 
 #[tauri::command]

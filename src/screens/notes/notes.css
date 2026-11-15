@@ -15,3 +15,4 @@
 @media(max-width:1150px){.notes-paper{padding:28px}.notes-aside{width:220px;padding:24px 16px}}
 @media(max-width:800px){.notes-screen{flex-direction:column}.notes-paper{border-right:0}.notes-aside{width:100%;border-top:1px solid #d6c8ab}}
 .notes-screen .notes-link{padding:0 2px;max-width:100%;box-sizing:border-box}.notes-screen .notes-source{padding:3px 2px}.notes-screen .notes-outline{box-sizing:border-box;padding-right:2px}
+.notes-screen .notes-scope{display:block;box-sizing:border-box;width:100%;text-align:left;padding:4px 8px;margin:0 0 6px;border:1px solid #d6c8ab;background:#f8f1e3;color:#6e6155;border-radius:6px;cursor:pointer;font-size:12px}

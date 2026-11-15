@@ -1,5 +1,5 @@
 // Explicit opt-in: never runs in CI; no paths, properties or note text in output.
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import ReactMarkdown from "react-markdown";
@@ -17,6 +17,7 @@ async function walk(dir: string, depth = 0) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) await walk(path, depth + 1);
     else if (entry.isFile() && name.endsWith(".md")) {
+      if ((await stat(path)).size > 2 * 1024 * 1024) throw Error("Read limit");
       const data = await readFile(path); bytes += data.length;
       if (data.length > 2 * 1024 * 1024 || bytes > 16 * 1024 * 1024 || ++notes > 1000) throw Error("Read limit");
       const markdown = new TextDecoder("utf-8", { fatal: true }).decode(data);
