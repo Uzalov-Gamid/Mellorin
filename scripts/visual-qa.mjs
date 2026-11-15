@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {notesCatalog} from './qa/notes-fixture.mjs';
 import {chromium} from 'playwright';
 import pixelmatch from 'pixelmatch';
 import {PNG} from 'pngjs';
@@ -21,7 +22,7 @@ const widths=option('--widths','1100,1440,1680').split(',').map(Number);
 if(widths.some(n=>!Number.isInteger(n)||n<800||n>4000))throw Error('Widths must be integers from 800 to 4000');
 const names=(await readdir(mockups)).filter(n=>n.endsWith('.dc.html'));
 const sources=Object.fromEntries(await Promise.all(names.map(async n=>[n.replace('.dc.html',''),await readFile(join(mockups,n),'utf8')])));
-const routes={Writing:'english/writing',Home:'home',Main:'english/reading',ReadingCollapsed:'english/reading',Words:'english/words',Listening:'english/listening',Settings:'home'};
+const routes={Note:'english/notes',Writing:'english/writing',Home:'home',Main:'english/reading',ReadingCollapsed:'english/reading',Words:'english/words',Listening:'english/listening',Settings:'home'};
 const seedFormats=Object.fromEntries(await Promise.all((await readdir('formats')).filter(n=>n.endsWith('.json')).map(async n=>['formats/'+n,await readFile(join('formats',n),'utf8')])));
 const selected=option('--screen','').split(',').filter(Boolean);
 for(const name of selected)if(!sources[name])throw Error(`Unknown mockup ${name}`);
@@ -57,6 +58,7 @@ try {
           const snapshot=${JSON.stringify(snapshot)};
           const files=${JSON.stringify({...seedFormats,'.mellorin/english-writing.json':JSON.stringify(writingLesson),'.mellorin/english-words.json':JSON.stringify(wordLesson),'.mellorin/english-listening.json':JSON.stringify(listeningLesson),'Learning/English/listening/2026-11-15-qa.md':'---\npractice: true\n---\n# A quiet morning'})};
           mockIPC(async(cmd,args)=>{
+            if(cmd==='notes_catalog')return ${JSON.stringify(notesCatalog)};
             if(cmd==='config_get')return {vault_path:'/synthetic/qa-vault',claude_path:'synthetic',theme:'light',jery_can_edit_vault:true,jery_ticktick:'full'};
             if(cmd==='learning_snapshot')return snapshot;
             if(cmd==='vault_subjects')return snapshot.state.subjects.map(s=>({name:({english:'English',devops:'DevOps',arabic:'Arabic',c:'C',sql:'SQL'})[s.id],skills:s.trail.map(t=>t.id)}));
@@ -81,6 +83,7 @@ try {
       await page.getByRole('textbox',{name:'Ответ JERY',exact:true}).waitFor();
       if(['Main','ReadingCollapsed'].includes(name)) {await page.getByRole('textbox',{name:'Текст для чтения',exact:true}).fill(reading);await page.getByRole('button',{name:'Читать →',exact:true}).click();await page.getByRole('button',{name:'Разобрать предложение 3',exact:true}).click();await page.getByText('этим утром',{exact:true}).waitFor();await page.getByRole('button',{name:'curious',exact:true}).click();await page.getByText('любопытный',{exact:true}).waitFor();}
       if(name==='Writing')await page.getByLabel('Текст с отмеченными ошибками',{exact:true}).waitFor();
+      if(name==='Note'){await page.getByRole('button',{name:'topic-14-past-simple-regular.md',exact:true}).click();await page.getByRole('heading',{name:'Past Simple: правильные глаголы',exact:true}).waitFor();}
       if(name==='Settings')await page.getByRole('button',{name:'Настройки',exact:true}).click();
       await page.evaluate(()=>document.fonts.ready);
       const actual=await page.screenshot({path:join(out,`${key}-app.png`)});
@@ -92,6 +95,22 @@ try {
       const findings=await page.evaluate(audit);
       const writingFlow = name === 'Writing' ? await verifyWritingFlow(page) : undefined;
       report.screens.push({name,width,collapsed,differentPixels:pixels,differencePercent:100*pixels/(width*900),findings,errors,...(writingFlow ? {writingFlow} : {})});
+      if(name==='Note' && width===1440 && !collapsed) {
+        const checks=[];
+        await page.locator('.notes-markdown').getByRole('button',{name:'errors',exact:true}).click();
+        await page.getByRole('heading',{name:'Ошибки',exact:true}).waitFor(); checks.push('wikilink opens the resolved vault note');
+        await page.locator('.notes-sources').getByRole('button',{name:'topic-14-past-simple-regular.md',exact:true}).click();
+        await page.getByRole('heading',{name:'Past Simple: правильные глаголы',exact:true}).waitFor(); checks.push('source selection restores the requested note');
+        await page.evaluate(()=>{window.location.hash='english/reading';});
+        await page.getByRole('textbox',{name:'Текст для чтения',exact:true}).fill(reading);
+        await page.getByRole('button',{name:'Читать →',exact:true}).click();
+        const paper=page.locator('.reading-paper'); await paper.waitFor(); const retained=await paper.innerText();
+        await page.evaluate(()=>{window.location.hash='english/notes';});
+        await page.getByRole('heading',{name:'Past Simple: правильные глаголы',exact:true}).waitFor(); checks.push('notes selection survives navigation');
+        await page.evaluate(()=>{window.location.hash='english/reading';}); await paper.waitFor();
+        if(await paper.innerText()!==retained)throw Error('Notes navigation reset the Reading panel'); checks.push('Reading panel retains its study text across Notes navigation');
+        report.screens[report.screens.length-1].interactionChecks=checks;
+      }
       await context.close();
     }
   }
