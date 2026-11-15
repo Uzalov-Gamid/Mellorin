@@ -5,6 +5,7 @@ import { Sidebar } from "./shell/Sidebar";
 import { resolveSubjects, SUBJECTS, type Subject } from "./subjects";
 import { vaultSubjects } from "./subprocess";
 import { RequestsInbox } from "./shell/RequestsInbox";
+import { SettingsPreferences } from "./screens/settings/SettingsPreferences";
 import { VaultSettings } from "./shell/VaultSettings";
 import { useJery } from "./useJery";
 import { AppShell } from "./shell/AppShell";
@@ -25,6 +26,11 @@ export default function App() {
   const [taskBusy, setTaskBusy] = useState(false);
   const [taskError, setTaskError] = useState<string | null>(null);
   const [settings, setSettings] = useState(false);
+  useEffect(() => {
+    const key = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "j") { event.preventDefault(); setExpanded(value => !value); } if ((event.metaKey || event.ctrlKey) && event.key === ",") { event.preventDefault(); setSettings(value => !value); } };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  }, []);
   useEffect(() => {
     const changed = () => setScreen(screenFromHash(window.location.hash));
     window.addEventListener("hashchange", changed);
@@ -56,13 +62,17 @@ export default function App() {
     sidebar={<Sidebar subjects={subjects} state={snapshot.state} today={snapshot.today} active={screen} connected={jery.running} footer={<>
       <RequestsInbox />
       <button aria-label="Настройки" aria-expanded={settings} onClick={() => setSettings(value => !value)}>◐</button>
-      {settings && <VaultSettings onClose={() => setSettings(false)} />}
+
     </>} />}>
+    <SettingsPreferences />
+    {settings && <VaultSettings onClose={() => setSettings(false)} />}
+    <div hidden={settings}>
     <JeryBlocks jery={jery} />
     <JeryChanges jery={jery} />
     {taskError && <p role="alert">{taskError}</p>}
     <JeryFormatContext.Provider value={{ canSend: jery.ready && !jery.busy && !jery.loading, intentError: jery.error, message: jery.messages.filter(message => message.role === "assistant").slice(-1)[0]?.text || "", data: null, intent: (intent, value) => { setExpanded(true); void jery.sendText(`${intent}\nДанные ответа: ${JSON.stringify(value)}`, intent); } }}><ScreenPanels active={screen} /></JeryFormatContext.Provider>
     {screen === "home" && <StateHome snapshot={snapshot} subjects={subjects} busy={taskBusy || !jery.ready || jery.busy || jery.loading} onStart={startTask} onToggle={toggleTask} loading={loading} onRefresh={() => { setExpanded(true); void jery.sendText(REFRESH_PROMPT); }} />}
     {!Screen && screen !== "home" && <section className="empty-screen"><h1>{screen === "home" ? "Главная" : `${selected?.name || screen.split("/")[0]} › ${skill?.name || screen.split("/")[1]}`}</h1><p>Данных для этого экрана пока нет. Начни разговор с JERY.</p></section>}
+    </div>
   </AppShell>;
 }
