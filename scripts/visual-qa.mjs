@@ -63,6 +63,7 @@ try {
             if(cmd==='requests_snapshot')return {open:[]};
             if(cmd==='change_history')return [];
             if(cmd==='subprocess_status')return false;
+            if(cmd==='settings_diagnostics')return {data_directory:'/synthetic/config',vault_found:true,learning_found:true,cli_available:true};
             if(cmd==='ticktick_status')return 'connected';
             if(['learning_init','format_seed','format_request_block','subprocess_stop'].includes(cmd))return;
             throw Error('Unexpected synthetic QA command: '+cmd);
