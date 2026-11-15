@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { translate, vocabAdd } from "./subprocess";
 
 function WordPopup({ word, sentence, onSaved, onClose }: {
@@ -7,6 +7,11 @@ function WordPopup({ word, sentence, onSaved, onClose }: {
   const [translation, setTranslation] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const active = useRef(false);
+  useEffect(() => {
+    active.current = true;
+    return () => { active.current = false; };
+  }, []);
   useEffect(() => {
     let active = true;
     translate(word, sentence).then(result => { if (active) setTranslation(result); })
@@ -16,9 +21,9 @@ function WordPopup({ word, sentence, onSaved, onClose }: {
   async function markUnknown() {
     setSaving(true);
     setError(null);
-    try { await vocabAdd(word, sentence); onSaved(); }
-    catch (reason) { setError(`Не удалось сохранить: ${String(reason)}`); }
-    finally { setSaving(false); }
+    try { await vocabAdd(word, sentence); if (active.current) onSaved(); }
+    catch (reason) { if (active.current) setError(`Не удалось сохранить: ${String(reason)}`); }
+    finally { if (active.current) setSaving(false); }
   }
   return <span className="word-popup" role="dialog" aria-label={`Перевод: ${word}`}>
     <span className="word-popup-word">{word}</span>
