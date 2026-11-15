@@ -37,6 +37,7 @@ vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn((event: string, callback
   return Promise.resolve(vi.fn());
 }) }));
 import { Chat } from "./Chat";
+import { useJery } from "./useJery";
 import { TextViewer } from "./TextViewer";
 
 type Props = {
@@ -176,5 +177,34 @@ describe("Word popup lifecycle", () => {
     runtime.cleanups.splice(0).forEach(cleanup => cleanup());
     resolveSave(); await saving;
     expect(onSaved).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("JERY shell actions", () => {
+  it("connects once before sending a user initiated Today request", async () => {
+    let jery: ReturnType<typeof useJery>;
+    const Harness = () => { jery = useJery(); return <div />; };
+    render(Harness); await flush(); render(Harness);
+    await jery!.sendText("прочитай TickTick, что у меня сегодня");
+    expect(runtime.invoke.mock.calls.map(call => call[0])).toEqual(["subprocess_status", "subprocess_start", "subprocess_send"]);
+    render(Harness);
+    expect(jery!.messages[0].text).toBe("прочитай TickTick, что у меня сегодня");
+    runtime.listeners.get("chat-delta")?.({ payload: { text: "Сегодня" } });
+    runtime.listeners.get("chat-done")?.({ payload: {} });
+    render(Harness);
+    expect(jery!.messages[1].text).toBe("Сегодня");
+    expect(jery!.loading).toBe(false);
+  });
+  it("does not send or connect twice while connection is pending", async () => {
+    let jery: ReturnType<typeof useJery>;
+    const Harness = () => { jery = useJery(); return <div />; };
+    render(Harness); await flush(); render(Harness);
+    let connected: () => void = () => {};
+    runtime.invoke.mockImplementation((command: string) => command === "subprocess_start" ? new Promise<void>(resolve => { connected = resolve; }) : Promise.resolve());
+    const first = jery!.sendText("one");
+    await jery!.sendText("two"); connected(); await first;
+    expect(runtime.invoke.mock.calls.filter(call => call[0] === "subprocess_start")).toHaveLength(1);
+    expect(runtime.invoke.mock.calls.filter(call => call[0] === "subprocess_send")).toHaveLength(1);
   });
 });
