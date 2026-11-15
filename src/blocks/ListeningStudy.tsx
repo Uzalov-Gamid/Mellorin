@@ -16,7 +16,7 @@ export function ListeningLesson() {
     let active = true;
     void vaultReadText(LISTENING_PATH).then(parseListeningLesson).then(next => {
       if (active) { if (audio.current) { audio.current.pause(); audio.current.playbackRate = 1; if (audio.current.readyState > 0) audio.current.currentTime = 0; } setLesson(next); setError(''); setStage(0); setAnswers(['', '', '']); setRetell(['', '', '']); setWords(''); setSpeed('1'); setAudioError(''); }
-    }).catch(reason => { if (active) setError(`Урок недоступен: ${String(reason)}. Последний корректный урок сохранён.`); });
+    }).catch(reason => { if (active) setError(`Урок недоступен: ${String(reason)}. Проверь источник и загрузи урок ещё раз.`); });
     void (async () => {
       try {
         const entries = (await vaultList(LISTENING_DIR)).filter(e => !e.is_dir && e.name !== 'process.md' && listeningSource(`${LISTENING_DIR}/${e.name}`));
