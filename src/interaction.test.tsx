@@ -254,6 +254,10 @@ describe("Reading failure handling", () => {
     render(TextViewer); await flush(); tree = render(TextViewer);
     expect(content(tree)).toContain("Не удалось разобрать: Error: invalid JSON");
     expect(content(tree)).toContain("Keep this.");
+    runtime.invoke.mockResolvedValue({ phrases: [{ text: "Keep this", ru: "Сохрани это" }] });
+    await find(tree, e => e.type === "button" && content(e) === "Повторить разбор").props.onClick?.();
+    render(TextViewer); await flush();
+    expect(content(render(TextViewer))).toContain("Сохрани это");
   });
   it("does not report a status saved when the status command fails", async () => {
     runtime.invoke.mockImplementation((command: string) => command === "vocab_set_status" ? Promise.reject("write failed") : Promise.resolve("Привет"));

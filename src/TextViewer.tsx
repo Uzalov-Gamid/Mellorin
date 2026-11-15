@@ -63,6 +63,7 @@ export function TextViewer() {
   const [popup, setPopup] = useState<string | null>(null);
   const [selected, setSelected] = useState<number | null>(null);
   const [explanation, setExplanation] = useState<Explanation | null>(null);
+  const [phraseAttempt, setPhraseAttempt] = useState(0);
   const [phraseError, setPhraseError] = useState<string | null>(null);
   useEffect(() => {
     if (selected === null) return;
@@ -72,7 +73,7 @@ export function TextViewer() {
     explainSentence(sentence).then(result => { if (active) setExplanation(result); })
       .catch((reason: unknown) => { if (active) setPhraseError(`Не удалось разобрать: ${String(reason)}`); });
     return () => { active = false; };
-  }, [selected, text]);
+  }, [selected, text, phraseAttempt]);
   const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
   if (editing) return <div className="viewer">
     <div className="viewer-header"><span className="viewer-title">Чтение текста</span></div>
@@ -104,7 +105,7 @@ export function TextViewer() {
       })}</span><sup><button aria-label={`Разобрать предложение ${sentenceIndex + 1}`} aria-pressed={selected === sentenceIndex} onClick={() => setSelected(sentenceIndex)}>{sentenceIndex + 1}</button></sup>{" "}
     </span>)}</div>
     {selected !== null && <section className="phrase-breakdown" aria-live="polite"><div className="caption">ПРЕДЛОЖЕНИЕ {selected + 1} · ФРАЗЫ</div>
-      {phraseError ? <p role="alert">{phraseError}</p> : explanation ? <div className="phrase-list">{explanation.phrases.map((phrase, index) => <div className="phrase" key={index}><div>{phrase.text}</div><div>{phrase.ru}</div></div>)}</div> : <p>Разбираем…</p>}
+      {phraseError ? <div><p role="alert">{phraseError}</p><button className="btn-sm" onClick={() => setPhraseAttempt(value => value + 1)}>Повторить разбор</button></div> : explanation ? <div className="phrase-list">{explanation.phrases.map((phrase, index) => <div className="phrase" key={index}><div>{phrase.text}</div><div>{phrase.ru}</div></div>)}</div> : <p>Разбираем…</p>}
     </section>}
     </article>
     {unknown.length > 0 && <div className="vocab-panel"><div className="vocab-title">Незнакомые слова</div><div className="vocab-list">

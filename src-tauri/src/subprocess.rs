@@ -181,6 +181,14 @@ pub async fn explain_sentence(config: &Config, sentence: &str) -> anyhow::Result
 }
 
 async fn one_shot(config: &Config, prompt: &str) -> anyhow::Result<String> {
+    one_shot_with_timeout(config, prompt, std::time::Duration::from_secs(60)).await
+}
+
+async fn one_shot_with_timeout(
+    config: &Config,
+    prompt: &str,
+    limit: std::time::Duration,
+) -> anyhow::Result<String> {
     let mut child = Command::new(&config.claude_path)
         .args(["-p", "--output-format", "json"])
         .current_dir(&config.vault_path)
@@ -189,10 +197,14 @@ async fn one_shot(config: &Config, prompt: &str) -> anyhow::Result<String> {
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .spawn()?;
-    let mut stdin = child.stdin.take().expect("stdin was piped");
-    stdin.write_all(prompt.as_bytes()).await?;
-    drop(stdin);
-    let output = child.wait_with_output().await?;
+    let output = tokio::time::timeout(limit, async move {
+        let mut stdin = child.stdin.take().expect("stdin was piped");
+        stdin.write_all(prompt.as_bytes()).await?;
+        drop(stdin);
+        child.wait_with_output().await
+    })
+    .await
+    .map_err(|_| anyhow::anyhow!("Claude helper timed out; retry the request"))??;
     anyhow::ensure!(
         output.status.success(),
         "Claude exited with {}: {}",
@@ -392,5 +404,28 @@ mod tests {
         assert!(parse_line("invalid").is_err());
         assert!(parse_line("{}").is_err());
         assert!(parse_line(r#"{"type":"assistant"}"#).is_err());
+    }
+}
+
+#[cfg(all(test, unix))]
+mod timeout_tests {
+    use super::*;
+    use std::os::unix::fs::PermissionsExt;
+    #[tokio::test]
+    async fn one_shot_has_a_bounded_wait() {
+        let dir = tempfile::tempdir().unwrap();
+        let binary = dir.path().join("slow-helper");
+        std::fs::write(&binary, "#!/bin/sh\nexec sleep 5\n").unwrap();
+        std::fs::set_permissions(&binary, std::fs::Permissions::from_mode(0o700)).unwrap();
+        let config = Config {
+            vault_path: dir.path().to_string_lossy().into_owned(),
+            claude_path: binary.to_string_lossy().into_owned(),
+            ..Config::default()
+        };
+        let error =
+            one_shot_with_timeout(&config, "synthetic", std::time::Duration::from_millis(30))
+                .await
+                .unwrap_err();
+        assert!(error.to_string().contains("timed out"));
     }
 }
