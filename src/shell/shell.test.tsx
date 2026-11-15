@@ -26,13 +26,14 @@ it("keeps reading mounted while another subject is selected", () => {
 });
 
 import { AppShell } from "./AppShell";
-it("shows only the current screen context action and reserves a draggable top bar", () => {
-  const render = (active: string) => renderToStaticMarkup(<AppShell sidebar={null} jery={jery} expanded={false} onToggleChat={vi.fn()} onToday={vi.fn()} active={active} onNewText={vi.fn()}>{null}</AppShell>);
-  expect(render("home")).toContain("⟳ Обновить");
-  expect(render("home")).not.toContain("› Сегодня");
-  expect(render("english/reading")).toContain("+ Новый текст");
-  expect(render("english/reading")).not.toContain("⟳ Обновить");
-  expect(render("english/words")).toContain('href="#english/vocabulary"');
-  expect(render("devops/topic")).not.toContain("+ Новый текст");
+it("has no buttons in the top bar except a quiet refresh icon on Home, and stays draggable", () => {
+  const render = (active: string) => renderToStaticMarkup(<AppShell sidebar={null} jery={jery} expanded={false} onToggleChat={vi.fn()} onToday={vi.fn()} active={active}>{null}</AppShell>);
+  const top = (html: string) => html.slice(html.indexOf("<header"), html.indexOf("</header>"));
+  expect(top(render("home"))).toContain('aria-label="Обновить"');
+  expect(top(render("home"))).not.toContain("ui-button");
+  for (const screen of ["english/reading", "english/words", "devops/topic", "settings"]) {
+    expect(top(render(screen))).not.toContain("<button");
+    expect(top(render(screen))).not.toContain("<a ");
+  }
   expect(render("home")).toContain('data-tauri-drag-region="true"');
 });
