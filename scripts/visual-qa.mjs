@@ -9,7 +9,7 @@ import {renderMockup} from './qa/mockup.mjs';
 import {audit} from './qa/audit.mjs';
 import {verifyWritingFlow} from './qa/writing-flow.mjs';
 import {writingLesson} from './qa/writing-fixture.mjs';
-import {snapshot,reading,wordLesson,listeningLesson} from './qa/fixture.mjs';
+import {snapshot,reading,readingPhrases,wordLesson,listeningLesson} from './qa/fixture.mjs';
 const args=process.argv.slice(2);
 const option=(key,fallback)=>args.includes(key)?args[args.indexOf(key)+1]:fallback;
 if(args.includes('--help')) {
@@ -65,6 +65,8 @@ try {
             if(cmd==='requests_snapshot')return {open:[]};
             if(cmd==='change_history')return [];
             if(cmd==='subprocess_status')return false;
+            if(cmd==='explain_sentence')return ${JSON.stringify(readingPhrases)};
+            if(cmd==='translate')return 'любопытный';
             if(cmd==='settings_diagnostics')return {data_directory:'/synthetic/config',vault_found:true,learning_found:true,cli_available:true};
             if(cmd==='ticktick_status')return 'connected';
             if(['learning_init','format_seed','format_request_block','subprocess_stop'].includes(cmd))return;
@@ -77,7 +79,7 @@ try {
       });
       await page.goto(`${url}/#${routes[name]}`);
       await page.getByRole('textbox',{name:'Ответ JERY',exact:true}).waitFor();
-      if(['Main','ReadingCollapsed'].includes(name)) {await page.getByRole('textbox',{name:'Текст для чтения',exact:true}).fill(reading);await page.getByRole('button',{name:'Читать →',exact:true}).click();}
+      if(['Main','ReadingCollapsed'].includes(name)) {await page.getByRole('textbox',{name:'Текст для чтения',exact:true}).fill(reading);await page.getByRole('button',{name:'Читать →',exact:true}).click();await page.getByRole('button',{name:'Разобрать предложение 3',exact:true}).click();await page.getByText('этим утром',{exact:true}).waitFor();await page.getByRole('button',{name:'curious',exact:true}).click();await page.getByText('любопытный',{exact:true}).waitFor();}
       if(name==='Writing')await page.getByLabel('Текст с отмеченными ошибками',{exact:true}).waitFor();
       if(name==='Settings')await page.getByRole('button',{name:'Настройки',exact:true}).click();
       await page.evaluate(()=>document.fonts.ready);
