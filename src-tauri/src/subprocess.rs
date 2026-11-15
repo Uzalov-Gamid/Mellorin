@@ -1,20 +1,60 @@
+use crate::config::Config;
+use serde_json::{json, Value};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::process::{Child, Command};
-use tokio::sync::Mutex;
+use tokio::process::{ChildStdin, Command};
+use tokio::sync::{oneshot, Mutex};
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ChatEvent {
+    Delta(String),
+    Done,
+    Error(String),
+}
+
+pub fn parse_line(line: &str) -> anyhow::Result<Option<ChatEvent>> {
+    let value: Value = serde_json::from_str(line)?;
+    match value.get("type").and_then(Value::as_str) {
+        Some("assistant") => {
+            let blocks = value
+                .pointer("/message/content")
+                .and_then(Value::as_array)
+                .ok_or_else(|| anyhow::anyhow!("assistant message missing content blocks"))?;
+            let text: String = blocks
+                .iter()
+                .filter(|block| block["type"] == "text")
+                .filter_map(|block| block["text"].as_str())
+                .collect();
+            Ok((!text.is_empty()).then_some(ChatEvent::Delta(text)))
+        }
+        Some("result") => Ok(Some(ChatEvent::Done)),
+        Some(_) => Ok(None),
+        None => anyhow::bail!("stream-json event missing type"),
+    }
+}
+
+struct Session {
+    stdin: ChildStdin,
+    stop: oneshot::Sender<()>,
+    finished: oneshot::Receiver<()>,
+}
 
 pub struct SubprocessManager {
-    child: Mutex<Option<Child>>,
-    stdin: Mutex<Option<tokio::process::ChildStdin>>,
+    session: Mutex<Option<Session>>,
     running: Arc<AtomicBool>,
+}
+
+impl Default for SubprocessManager {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl SubprocessManager {
     pub fn new() -> Self {
         Self {
-            child: Mutex::new(None),
-            stdin: Mutex::new(None),
+            session: Mutex::new(None),
             running: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -25,56 +65,148 @@ impl SubprocessManager {
 
     pub async fn start(
         &self,
-        claude_path: &str,
-        on_output: impl Fn(String) + Send + 'static,
+        config: &Config,
+        on_event: impl Fn(ChatEvent) + Send + Sync + 'static,
         on_exit: impl Fn() + Send + 'static,
     ) -> anyhow::Result<()> {
+        let mut session = self.session.lock().await;
         if self.is_running() {
             return Ok(());
         }
-
-        let mut child = Command::new(claude_path)
+        let mut child = Command::new(&config.claude_path)
+            .args([
+                "-p",
+                "--input-format",
+                "stream-json",
+                "--output-format",
+                "stream-json",
+                "--verbose",
+            ])
+            .current_dir(&config.vault_path)
+            .kill_on_drop(true)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
             .stderr(std::process::Stdio::piped())
             .spawn()?;
-
         let stdout = child.stdout.take().expect("stdout was piped");
+        let stderr = child.stderr.take().expect("stderr was piped");
         let stdin = child.stdin.take().expect("stdin was piped");
-
-        self.running.store(true, Ordering::SeqCst);
-
-        let running = Arc::clone(&self.running);
-        tokio::spawn(async move {
-            let mut lines = BufReader::new(stdout).lines();
-            while let Ok(Some(line)) = lines.next_line().await {
-                on_output(line);
-            }
-            running.store(false, Ordering::SeqCst);
-            on_exit();
+        let (stop, stopped) = oneshot::channel();
+        let (finished_tx, finished) = oneshot::channel();
+        *session = Some(Session {
+            stdin,
+            stop,
+            finished,
         });
-
-        *self.stdin.lock().await = Some(stdin);
-        *self.child.lock().await = Some(child);
+        self.running.store(true, Ordering::SeqCst);
+        let running = Arc::clone(&self.running);
+        let on_event = Arc::new(on_event);
+        let output_event = Arc::clone(&on_event);
+        let error_event = Arc::clone(&on_event);
+        tokio::spawn(async move {
+            let output = tokio::spawn(async move {
+                let mut lines = BufReader::new(stdout).lines();
+                loop {
+                    match lines.next_line().await {
+                        Ok(Some(line)) => match parse_line(&line) {
+                            Ok(Some(event)) => output_event(event),
+                            Ok(None) => {}
+                            Err(err) => output_event(ChatEvent::Error(format!(
+                                "Invalid stream-json: {err}"
+                            ))),
+                        },
+                        Ok(None) => break,
+                        Err(err) => {
+                            output_event(ChatEvent::Error(err.to_string()));
+                            break;
+                        }
+                    }
+                }
+            });
+            let errors = tokio::spawn(async move {
+                let mut lines = BufReader::new(stderr).lines();
+                loop {
+                    match lines.next_line().await {
+                        Ok(Some(line)) => error_event(ChatEvent::Error(line)),
+                        Ok(None) => break,
+                        Err(err) => {
+                            error_event(ChatEvent::Error(err.to_string()));
+                            break;
+                        }
+                    }
+                }
+            });
+            let status = tokio::select! {
+                status = child.wait() => Some(status),
+                _ = stopped => { if let Err(err) = child.kill().await { on_event(ChatEvent::Error(err.to_string())); } None }
+            };
+            let _ = output.await;
+            let _ = errors.await;
+            match status {
+                Some(Ok(status)) if !status.success() => {
+                    on_event(ChatEvent::Error(format!("Claude exited with {status}")))
+                }
+                Some(Err(err)) => on_event(ChatEvent::Error(err.to_string())),
+                _ => {}
+            }
+            on_exit();
+            running.store(false, Ordering::SeqCst);
+            let _ = finished_tx.send(());
+        });
         Ok(())
     }
 
     pub async fn send(&self, message: &str) -> anyhow::Result<()> {
-        let mut guard = self.stdin.lock().await;
-        let stdin = guard
+        let mut guard = self.session.lock().await;
+        anyhow::ensure!(self.is_running(), "not running");
+        let session = guard
             .as_mut()
             .ok_or_else(|| anyhow::anyhow!("not running"))?;
-        stdin.write_all(format!("{message}\n").as_bytes()).await?;
-        stdin.flush().await?;
+        let line = json!({"type":"user","message":{"role":"user","content":[{"type":"text","text":message}]}});
+        session
+            .stdin
+            .write_all(format!("{line}\n").as_bytes())
+            .await?;
+        session.stdin.flush().await?;
         Ok(())
     }
 
     pub async fn stop(&self) -> anyhow::Result<()> {
-        if let Some(mut child) = self.child.lock().await.take() {
-            child.kill().await?;
+        if let Some(session) = self.session.lock().await.take() {
+            let _ = session.stop.send(());
+            drop(session.stdin);
+            let _ = session.finished.await;
         }
-        *self.stdin.lock().await = None;
-        self.running.store(false, Ordering::SeqCst);
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parses_assistant_text_blocks() {
+        assert_eq!(parse_line(r#"{"type":"assistant","message":{"content":[{"type":"text","text":"Hello"},{"type":"tool_use"},{"type":"text","text":" world"}]}}"#).unwrap(), Some(ChatEvent::Delta("Hello world".into())));
+    }
+
+    #[test]
+    fn parses_result_and_ignores_metadata() {
+        assert_eq!(
+            parse_line(r#"{"type":"result"}"#).unwrap(),
+            Some(ChatEvent::Done)
+        );
+        assert_eq!(parse_line(r#"{"type":"system"}"#).unwrap(), None);
+        assert_eq!(
+            parse_line(r#"{"type":"assistant","message":{"content":[]}}"#).unwrap(),
+            None
+        );
+    }
+
+    #[test]
+    fn rejects_invalid_json_and_malformed_messages() {
+        assert!(parse_line("invalid").is_err());
+        assert!(parse_line("{}").is_err());
+        assert!(parse_line(r#"{"type":"assistant"}"#).is_err());
     }
 }
