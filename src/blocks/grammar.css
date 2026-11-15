@@ -1,0 +1,44 @@
+.grammar-study { display:flex; flex-direction:column; gap:16px; color:var(--ink); }
+.grammar-study header { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; font-size:13px; color:var(--stone); }
+.grammar-study header span { color:var(--navy); }
+.grammar-study header small { font-size:12px; }
+.grammar-steps,.grammar-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.grammar-steps span { padding:3px 12px; border:1px solid var(--sand); border-radius:12px; color:var(--stone); font-size:12px; }
+.grammar-steps .done { color:var(--olive); }
+.grammar-steps .now { background:var(--ember); color:var(--paper); border-color:var(--ember); }
+.grammar-columns { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:16px; min-height:calc(100dvh - 212px); }
+.grammar-columns > * { min-width:0; }
+.grammar-paper { background:var(--paper); border:1px solid var(--sand); border-radius:12px; }
+.grammar-theory { padding:28px 36px; display:flex; flex-direction:column; gap:18px; box-sizing:border-box; }
+.grammar-study h2 { margin:0; font-size:20px; font-weight:600; color:var(--pine); overflow-wrap:anywhere; }
+.grammar-subtitle { color:var(--stone); font-size:13px; margin-top:2px; }
+.grammar-theory > p { margin:0; overflow-wrap:anywhere; }
+.grammar-study table { border-collapse:collapse; width:100%; }
+.grammar-study td,.grammar-study th { padding:8px 14px; text-align:left; border-bottom:1px solid var(--sand); font-size:14px; overflow-wrap:anywhere; }
+.grammar-study th { color:#56616b; font-size:12px; letter-spacing:.06em; font-weight:400; }
+.grammar-trap { border-left:3px solid var(--brass); padding:2px 0 2px 14px; color:var(--tan); font-size:13px; overflow-wrap:anywhere; }
+.grammar-navigation { display:flex; gap:10px; align-items:center; margin-top:auto; flex-wrap:wrap; }
+.grammar-navigation span { flex:1; min-width:130px; font-size:12px; color:var(--ash); }
+.grammar-study button { border:1px solid var(--dune); background:transparent; color:var(--espresso); border-radius:8px; padding:7px 16px; font:inherit; font-size:13px; max-width:100%; overflow-wrap:anywhere; cursor:pointer; }
+.grammar-study button:disabled { opacity:.5; cursor:default; }
+.grammar-study .grammar-primary { background:var(--ember); border-color:var(--ember); color:var(--paper); padding:7px 18px; }
+.grammar-columns aside { display:flex; flex-direction:column; gap:16px; }
+.grammar-card { padding:16px 20px; overflow-wrap:anywhere; }
+.grammar-cap { font-size:11px; letter-spacing:.1em; color:var(--stone); margin-bottom:8px; }
+.grammar-options { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+.grammar-options button { padding:3px 12px; }
+.grammar-options .grammar-selected { border-color:var(--ember); background:var(--peach); }
+.grammar-options .grammar-correct { border:2px solid var(--emerald); background:var(--mint); color:var(--pine); padding:2px 11px; }
+.grammar-options .grammar-wrong { border-color:var(--rust); color:var(--rust); }
+.grammar-study .grammar-send { margin-top:10px; font-size:12px; }
+.grammar-homework { display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--espresso); }
+.grammar-homework > div { display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+.grammar-hint { font-size:12px; color:var(--ash); margin:10px 0 0; }
+.grammar-note-name { font-size:13px; }
+.grammar-study .grammar-note-link { color:var(--emerald); font-size:12px; border:0; padding:0; margin-top:4px; text-align:left; }
+.grammar-accent { color:var(--ember); }.grammar-success { color:var(--olive); }.grammar-warning { color:var(--mustard); }.grammar-danger { color:var(--rust); }.grammar-muted { color:var(--stone); }.grammar-highlight { background:var(--butter); }
+.grammar-sources { font-size:11px; color:var(--stone); overflow-wrap:anywhere; }
+.grammar-sources p { margin:4px 0; }
+.grammar-note { position:fixed; inset:60px 36px 80px; padding:24px; background:var(--paper); border:1px solid var(--sand); border-radius:12px; overflow:auto; z-index:20; }
+.grammar-note pre { font:inherit; white-space:pre-wrap; overflow-wrap:anywhere; }
+@media(max-width:850px) { .grammar-columns { grid-template-columns:1fr; }.grammar-theory { padding:22px; } }
