@@ -1,5 +1,7 @@
 # Contributing
 
+External code contributions require a prior written agreement with Gamid Uzalov. Do not submit code before that agreement. Access to this public repository does not grant permission to run, copy or modify the software; the setup and workflow below apply to authorized contributors. See [LICENSE](LICENSE) and [licensing details](docs/LICENSING.md).
+
 ## Setup
 
 Requirements: Rust (stable), Node.js 20+, npm, and the [Tauri 2 platform prerequisites](https://tauri.app/start/prerequisites/). The Tauri CLI is a project development dependency.

@@ -25,6 +25,10 @@
     "vitest": "^2"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild", "@tauri-apps/cli"]
-  }
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "@tauri-apps/cli"
+    ]
+  },
+  "license": "SEE LICENSE IN LICENSE"
 }
