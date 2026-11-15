@@ -37,7 +37,7 @@ These are the defaults used when creating a missing config; existing configurati
 
 ## Current limits
 
-Chat history and pasted reading text live in frontend memory. There is no persisted conversation browser, vocabulary review deck, or additional study module. Local Markdown storage does not make AI features offline: prompts and translation context reach the CLI service, and CLI tools may access vault files. The synthetic browser demos validate UI presentation with a mocked bridge, not native execution, live service compatibility, or real filesystem persistence.
+Chat history and pasted reading text live in frontend memory. There is no persisted conversation browser. English Words now provides a local six-step study flow from explicitly prepared vault lesson data; other study screens remain staged. Local Markdown storage does not make AI features offline: prompts and translation context reach the CLI service, and CLI tools may access vault files. The synthetic browser demos validate UI presentation with a mocked bridge, not native execution, live service compatibility, or real filesystem persistence.
 
 ## Machine-readable learning state
 
@@ -79,3 +79,7 @@ Synthetic CLI regression on 2026-11-15 confirmed Write/Edit inside the vault for
 The sidebar badge polls `requests_snapshot` every five seconds. It reads bounded Markdown notes from `app-requests`, showing open count and escaped note text, including source format and data example. Missing directory means an empty inbox; failed reads show `?` and a diagnostic, never a fabricated count. At most 200 notes of 64 KiB each are accepted; outside-vault symlinks are rejected by the vault read layer.
 
 Renderer requests retain the first example and deduplicate by date/block. A missing block produces a visible placeholder and a note describing its type, requesting format and JSON props. JERY can write a richer request note under normal vault-edit permission. After implementing the block, close the note with a standalone `Status: closed` or `Status: done` line (case insensitive); notes without a status are open. Request contents are data, never executable code. The inbox itself only reads notes; it does not send them anywhere or call a model.
+
+## English Words (Stage 11, first screen)
+
+`formats/english-words.json` composes the reusable `word-study` block. The separately validated `.mellorin/english-words.json` is prepared by JERY only on user request and freezes when study starts. Cards and all four quiz rounds run locally. Only explicit preparation/result buttons send intents to JERY; only JERY decides and writes vocabulary statuses. Canonical and legacy vocabulary source paths are retained per word. See [English Words v1](english-words.md) for the exact bounded contract, prompts, refresh behavior and native review setup. The fixed seed creates both English formats without replacing custom files. Both screens remain mounted, preserving Reading state during navigation.
