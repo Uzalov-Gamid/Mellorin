@@ -17,6 +17,7 @@ pub struct Config {
     pub vault_path: String,
     pub claude_path: String,
     pub theme: String,
+    pub text_size: u8,
     pub jery_can_edit_vault: bool,
     pub jery_ticktick: TickTickMode,
 }
@@ -26,7 +27,8 @@ impl Default for Config {
         Self {
             vault_path: "~/MellorinVault".into(),
             claude_path: "claude".into(),
-            theme: "dark".into(),
+            theme: "light".into(),
+            text_size: 14,
             jery_can_edit_vault: true,
             jery_ticktick: TickTickMode::Full,
         }
@@ -54,14 +56,38 @@ impl Config {
         Self::save_value(dir, "jery_can_edit_vault", toml::Value::Boolean(enabled))
     }
 
+    pub fn save_settings(
+        dir: &Path,
+        vault: &str,
+        claude: &str,
+        theme: &str,
+        text_size: u8,
+    ) -> anyhow::Result<()> {
+        Self::save_values(
+            dir,
+            &[
+                ("vault_path", toml::Value::String(vault.into())),
+                ("claude_path", toml::Value::String(claude.into())),
+                ("theme", toml::Value::String(theme.into())),
+                ("text_size", toml::Value::Integer(text_size.into())),
+            ],
+        )
+    }
+
     fn save_value(dir: &Path, key: &str, value: toml::Value) -> anyhow::Result<()> {
+        Self::save_values(dir, &[(key, value)])
+    }
+
+    fn save_values(dir: &Path, values: &[(&str, toml::Value)]) -> anyhow::Result<()> {
         Self::load_from(dir)?;
         let path = dir.join("mellorin.toml");
         let mut document: toml::Value = toml::from_str(&std::fs::read_to_string(&path)?)?;
-        document
+        let table = document
             .as_table_mut()
-            .ok_or_else(|| anyhow::anyhow!("config must be a table"))?
-            .insert(key.into(), value);
+            .ok_or_else(|| anyhow::anyhow!("config must be a table"))?;
+        for (key, value) in values {
+            table.insert((*key).into(), value.clone());
+        }
         let mut temporary = tempfile::NamedTempFile::new_in(dir)?;
         use std::io::Write;
         temporary
@@ -129,7 +155,7 @@ mod tests {
         let config = Config::load_from(dir.path()).unwrap();
         assert!(Path::new(&config.vault_path).is_absolute());
         assert_eq!(config.claude_path, "claude");
-        assert_eq!(config.theme, "dark");
+        assert_eq!(config.theme, "light");
         let path = dir.path().join("mellorin.toml");
         let saved: Config = toml::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
         assert_eq!(saved, Config::default());

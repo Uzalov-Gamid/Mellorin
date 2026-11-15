@@ -5,6 +5,7 @@ mod formats;
 mod learning;
 mod notes;
 mod requests;
+mod settings;
 mod subprocess;
 mod ticktick;
 mod vault;
@@ -159,6 +160,38 @@ fn config_get(app: AppHandle) -> Result<Config, String> {
 }
 
 #[tauri::command]
+async fn settings_save(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    preferences: settings::Preferences,
+) -> Result<(), String> {
+    use tauri::Manager;
+    preferences.validate().map_err(|err| err.to_string())?;
+    let old = Config::load(&app).map_err(|err| err.to_string())?;
+    if preferences
+        .changes_process(&old)
+        .map_err(|err| err.to_string())?
+    {
+        state
+            .subprocess
+            .stop()
+            .await
+            .map_err(|err| err.to_string())?;
+    }
+    preferences
+        .save(&app.path().app_config_dir().map_err(|err| err.to_string())?)
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+async fn settings_diagnostics(app: AppHandle) -> Result<settings::Diagnostics, String> {
+    let config = Config::load(&app).map_err(|err| err.to_string())?;
+    use tauri::Manager;
+    let directory = app.path().app_config_dir().map_err(|err| err.to_string())?;
+    Ok(settings::diagnostics(&config, directory.to_string_lossy().into()).await)
+}
+
+#[tauri::command]
 async fn config_set_edit_permission(
     app: AppHandle,
     state: State<'_, AppState>,
@@ -278,6 +311,8 @@ pub fn run() {
             change_rollback,
             change_recover,
             config_get,
+            settings_save,
+            settings_diagnostics,
             config_set_ticktick,
             ticktick_status,
             requests_snapshot,
