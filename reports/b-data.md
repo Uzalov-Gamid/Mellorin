@@ -1,6 +1,6 @@
 # Lane B: vocabulary compatibility
 
-Backend-only first PR; ready for lead review after PR metadata is added below.
+Backend-only first PR; ready for lead review.
 
 Implemented:
 - Prefer the existing canonical `Learning/English/vocabulary/mywords-list.md`; retain the legacy `vocabulary/mywords-list.md` fallback and case-sensitive deduplication/reset-to-learning behavior.
@@ -29,4 +29,8 @@ Budget record (last payload.rate_limits from newest session at epoch 1794766367)
 - secondary: used_percent=5.0, window_minutes=10080, resets_at=1795369918 (valid).
 - Initial newest session had no rate-limit record; work continued per instruction.
 
-Restart state: implementation and local checks complete; create one PR to develop, append its URL / implementation head / CI state here, commit and push this report update, then stop. Do not run a refresh or native app verification in this lane.
+PR: https://github.com/Uzalov-Gamid/Mellorin/pull/42 (base `develop`, branch `feat/release-b-data`).
+Implementation head: `860394498d553d8bf9bc65bacf01cb34c78acbb9`; this report-only follow-up is the final branch commit. Resolve the current PR head before integration; the report cannot embed its own commit hash.
+Checks observed on implementation head: Rust checks IN_PROGRESS; Frontend checks QUEUED. Final-head CI is not claimed green; root must inspect the PR checks after this report push.
+
+Restart state: code and report committed/pushed; stop for root review. Next owner actions: confirm final-head CI, perform native regression, integrate if approved. No refresh, native verification, second screen, or merge is authorized for this worker turn.
