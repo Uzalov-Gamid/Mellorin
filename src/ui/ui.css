@@ -1,0 +1,26 @@
+.ui-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--sand); border-radius: 20px; font-size: 11px; color: var(--stone); }
+.ui-card { border: 1px solid var(--sand); border-radius: var(--radius-card); padding: var(--space-5); }
+.ui-card-paper { background: var(--paper); }
+.ui-night { background: var(--night); border-color: var(--espresso); color: var(--paper); }
+.ui-button { border: 1px solid var(--ember); border-radius: var(--radius); padding: 8px 14px; font: inherit; cursor: pointer; }
+.ui-button-filled { background: var(--ember); color: var(--paper); }
+.ui-button-outlined { background: transparent; color: var(--ember); }
+.ui-ring { display: inline-grid; place-items: center; border-radius: 50%; background: conic-gradient(var(--ember) var(--progress), var(--sand) 0); padding: 3px; flex-shrink: 0; }
+.ui-ring > span { border-radius: 50%; background: var(--cream); width: 100%; height: 100%; display: grid; place-items: center; font-size: 11px; color: var(--ink); }
+.ui-dots, .ui-segments, .ui-steps { display: flex; gap: 6px; align-items: center; }
+.ui-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sand); }
+.ui-segment { flex: 1; height: 4px; border-radius: 2px; background: var(--sand); }
+.ui-done { background: var(--olive); }
+.ui-current { background: var(--flame); }
+.ui-error { background: var(--rust); }
+.ui-steps { list-style: none; flex-wrap: wrap; padding: 0; }
+.ui-step-current { background: var(--ember); border-color: var(--ember); color: var(--paper); }
+.ui-step-done { color: var(--olive); }
+.ui-table-wrap { overflow-x: auto; }
+.ui-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
+.ui-table th, .ui-table td { padding: 10px 12px; border-bottom: 1px solid var(--sand); }
+.ui-table th { color: var(--pine); background: var(--linen); }
+.ui-table caption { text-align: left; color: var(--stone); padding-bottom: 8px; }
+.ui-quote { border-left: 3px solid var(--brass); padding: 8px 14px; color: var(--tan); margin: 12px 0; }
+.ui-collapsible summary { cursor: pointer; color: var(--ember); }
+.ui-collapsible > div { margin-top: 8px; }
