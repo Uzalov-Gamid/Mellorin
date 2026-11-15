@@ -4,7 +4,7 @@ import { JeryStrip } from "./JeryStrip";
 import type { Jery } from "../useJery";
 import { ScreenPanels, screenFromHash } from "../screens";
 
-const jery: Jery = { messages: [{ role: "assistant", text: "Последний ответ" }], input: "", setInput: vi.fn(), running: false, ready: true, busy: false, loading: false, error: null, toggleConnection: vi.fn(), send: vi.fn(), sendText: vi.fn() };
+const jery: Jery = { reply: { text: "", blocks: [], errors: [] }, messages: [{ role: "assistant", text: "Последний ответ" }], input: "", setInput: vi.fn(), running: false, ready: true, busy: false, loading: false, error: null, toggleConnection: vi.fn(), send: vi.fn(), sendText: vi.fn() };
 describe("shell", () => {
   it("resolves supported hashes and safely falls back", () => {
     expect(screenFromHash("#/english/reading")).toBe("english/reading");

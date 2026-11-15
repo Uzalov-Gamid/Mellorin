@@ -1,3 +1,4 @@
+import { JeryBlocks } from "./blocks/JeryBlocks";
 import { useEffect, useState } from "react";
 import { Sidebar } from "./shell/Sidebar";
 import { resolveSubjects, SUBJECTS, type Subject } from "./subjects";
@@ -61,6 +62,7 @@ export default function App() {
       <button aria-label="Настройки" aria-expanded={settings} onClick={() => setSettings(value => !value)}>◐</button>
       {settings && <div className="settings-popover" role="dialog" aria-label="Настройки"><h2>Хранилище</h2><p>{vault}</p><button onClick={() => setSettings(false)}>Закрыть</button></div>}
     </>} />}>
+    <JeryBlocks jery={jery} />
     {taskError && <p role="alert">{taskError}</p>}
     <JeryFormatContext.Provider value={{ message: jery.messages.filter(message => message.role === "assistant").slice(-1)[0]?.text || "", data: null, intent: (intent, value) => { setExpanded(true); void jery.sendText(`${intent}\nДанные ответа: ${JSON.stringify(value)}`); } }}><ScreenPanels active={screen} /></JeryFormatContext.Provider>
     {screen === "home" && <StateHome snapshot={snapshot} subjects={subjects} busy={taskBusy || !jery.ready || jery.busy || jery.loading} onStart={startTask} onToggle={toggleTask} loading={loading} onRefresh={() => { setExpanded(true); void jery.sendText(REFRESH_PROMPT); }} />}
