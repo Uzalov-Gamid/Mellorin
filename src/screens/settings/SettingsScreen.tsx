@@ -4,6 +4,7 @@ import "./settings.css";
 import { getConfig, setEditPermission, setTickTick, getTickTickStatus, type TickTickMode, type TickTickStatus } from "../../subprocess";
 
 export function SettingsScreen({ onClose }: { onClose: () => void }) {
+  const [originalPaths, setOriginalPaths] = useState<{ vault: string; cli: string } | null>(null);
   const [claude, setClaude] = useState("claude");
   const [textSize, setTextSize] = useState(14);
   const [diagnostics, setDiagnostics] = useState<Diagnostics | null>(null);
@@ -17,7 +18,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState("");
   useEffect(() => {
     let active = true;
-    getConfig().then(config => { if (active) { setVault(config.vault_path); setClaude(config.claude_path || "claude"); setTextSize((config as { text_size?: number }).text_size || 14); setAllowed(config.jery_can_edit_vault); setTicktick(config.jery_ticktick ?? "full"); } })
+    getConfig().then(config => { if (active) { setOriginalPaths({vault: config.vault_path, cli: config.claude_path || "claude"}); setVault(config.vault_path); setClaude(config.claude_path || "claude"); setTextSize((config as { text_size?: number }).text_size || 14); setAllowed(config.jery_can_edit_vault); setTicktick(config.jery_ticktick ?? "full"); } })
       .catch(reason => { if (active) setError(String(reason)); });
     getDiagnostics().then(value => { if (active) setDiagnostics(value); }).catch(() => { if (active) setError("Диагностика недоступна. Повтори проверку."); });
     getTickTickStatus().then(value => { if (active) setStatus(value); }).catch(() => { if (active) setStatus("unavailable"); });
@@ -39,7 +40,8 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
     setBusy(true); setError(""); setSaved("");
     try {
       await saveSettings({ vault_path: vault, claude_path: claude, theme: "light", text_size: size });
-      setTextSize(size); document.documentElement.style.setProperty("--text-size", `${size}px`);
+      setTextSize(size); document.documentElement.style.setProperty("--text-size", `${size}px`); document.body.style.fontSize = `${size}px`;
+      if (originalPaths && (originalPaths.vault !== vault || originalPaths.cli !== claude)) { window.location.reload(); return; }
       setSaved("Настройки сохранены");
       try { setDiagnostics(await getDiagnostics()); } catch { setError("Настройки сохранены, но диагностика недоступна."); }
     } catch (reason) { setError(`Не удалось сохранить настройки: ${String(reason)}`); }
@@ -80,7 +82,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
       </section>
     </div><div className="settings-column">
       <section className="settings-card"><div className="settings-cap">◆ ПРЕДМЕТЫ</div><div>Добавить, переименовать, переставить, архивировать.</div><button className="settings-btn settings-subjects" disabled title="Экран управления предметами готовится">Управлять предметами ›</button></section>
-      <section className="settings-card"><div className="settings-cap">◆ ГОРЯЧИЕ КЛАВИШИ</div>{[["Свернуть и развернуть панель", "⌘ B"], ["Настройки", "⌘ ,"], ["Новый текст для чтения", "⌘ N"], ["Отправить JERY", "↵"], ["Развернуть чат", "⌘ J"]].map(([label, key]) => <div className="settings-kv" key={key}><span>{label}</span><kbd>{key}</kbd></div>)}</section>
+      <section className="settings-card"><div className="settings-cap">◆ ГОРЯЧИЕ КЛАВИШИ</div>{[["Свернуть и развернуть панель", "⌘ B"], ["Настройки", "⌘ ,"], ["Отправить JERY", "↵"], ["Развернуть чат", "⌘ J"]].map(([label, key]) => <div className="settings-kv" key={key}><span>{label}</span><kbd>{key}</kbd></div>)}</section>
       <section className="settings-card"><div className="settings-cap">◆ О ПРИЛОЖЕНИИ</div><div className="settings-kv"><span>Версия</span><span>0.1.0</span></div><div className="settings-kv"><span>Лицензия</span><span>source-available · нужно разрешение</span></div><div className="settings-row settings-wrap"><button className="settings-btn" onClick={() => setDetails(!details)}>Показать папку данных</button><button className="settings-btn" disabled={busy} onClick={() => { setDetails(true); void check(); }}>Журнал для диагностики</button></div>
         {details && <p>Папка данных: {diagnostics?.data_directory || "недоступна"}. Конфигурация: mellorin.toml. Проверки: папка хранилища, Learning/, Claude Code --version и mcp list. Содержимое файлов и задач в диагностику не включается. {diagnostics?.cli_available ? "CLI доступен." : "CLI не подтверждён."}</p>}
       </section>

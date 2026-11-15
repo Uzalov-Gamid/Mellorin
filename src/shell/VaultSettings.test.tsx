@@ -19,7 +19,8 @@ async function flush() { await Promise.resolve(); await Promise.resolve(); await
 describe("vault permission", () => {
   it("loads permission, preserves it after failed persistence and updates after success", async () => {
     runtime.slots = []; runtime.effects = [];
-    vi.stubGlobal("document", {documentElement: {style: {setProperty: vi.fn()}}});
+    vi.stubGlobal("document", {body: {style: {}}, documentElement: {style: {setProperty: vi.fn()}}});
+    const reload = vi.fn(); vi.stubGlobal("window", {location: {reload}});
     runtime.getTickTickStatus.mockResolvedValue("connected");
     runtime.getDiagnostics.mockResolvedValue({vault_found: true, learning_found: true, cli_available: true});
     runtime.getConfig.mockResolvedValue({ vault_path: "/synthetic", jery_can_edit_vault: true, jery_ticktick: "full" });
@@ -53,5 +54,10 @@ describe("vault permission", () => {
     expect(render().find(item => item.props["aria-label"] === "Размер текста")!.props.value).toBe(14);
     render().find(item => item.props["aria-label"] === "Размер текста")!.props.onChange!({target: {checked: false, value: "18"}}); await flush();
     expect(render().find(item => item.props["aria-label"] === "Размер текста")!.props.value).toBe(18);
+    expect(document.body.style.fontSize).toBe("18px");
+    expect(reload).not.toHaveBeenCalled();
+    render().find(item => item.props["aria-label"] === "Путь хранилища")!.props.onChange!({target: {checked: false, value: "/synthetic-other"}}); await flush();
+    render().find(item => item.props.children === "Сохранить")!.props.onClick!(); await flush();
+    expect(reload).toHaveBeenCalledOnce();
   });
 });
