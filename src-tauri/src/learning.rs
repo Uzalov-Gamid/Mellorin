@@ -223,6 +223,10 @@ pub fn init_protocol(vault: &Path, prompt: &str) -> anyhow::Result<()> {
     if !existing.contains("# Mellorin state protocol v1") {
         body.push_str(&format!("# Mellorin state protocol v1\n\nUse lowercase folder subject ids (english, devops, arabic, c, sql); skill ids match the sidebar. Only refresh on a user request. Never invent data; omit unavailable values. Keep the vault Markdown notes as the source. Write UTF-8 JSON using a temporary file and rename.\n\nExact refresh prompt:\n\n{prompt}\n\nstate.json schema:\n```json\n{}\n```\n\ntoday.json schema:\n```json\n{}\n```\n", include_str!("../../docs/state.schema.json"), include_str!("../../docs/today.schema.json")));
     }
+    if !existing.contains("# Mellorin vault edit permission v1") {
+        body.push_str("\n\n");
+        body.push_str(include_str!("../../docs/vault-permissions.md"));
+    }
     if !existing.contains("# Mellorin reply protocol v1") {
         body.push_str("\n\n");
         body.push_str(include_str!("../../docs/jery-protocol.md"));

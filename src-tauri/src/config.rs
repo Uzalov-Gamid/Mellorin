@@ -8,6 +8,7 @@ pub struct Config {
     pub vault_path: String,
     pub claude_path: String,
     pub theme: String,
+    pub jery_can_edit_vault: bool,
 }
 
 impl Default for Config {
@@ -16,6 +17,7 @@ impl Default for Config {
             vault_path: "~/MellorinVault".into(),
             claude_path: "claude".into(),
             theme: "dark".into(),
+            jery_can_edit_vault: true,
         }
     }
 }
@@ -23,6 +25,29 @@ impl Default for Config {
 impl Config {
     pub fn load(app: &tauri::AppHandle) -> anyhow::Result<Self> {
         Self::load_from(&app.path().app_config_dir()?)
+    }
+
+    pub fn set_edit_permission(app: &tauri::AppHandle, enabled: bool) -> anyhow::Result<()> {
+        Self::save_edit_permission(&app.path().app_config_dir()?, enabled)
+    }
+
+    fn save_edit_permission(dir: &Path, enabled: bool) -> anyhow::Result<()> {
+        Self::load_from(dir)?;
+        let path = dir.join("mellorin.toml");
+        let mut document: toml::Value = toml::from_str(&std::fs::read_to_string(&path)?)?;
+        document
+            .as_table_mut()
+            .ok_or_else(|| anyhow::anyhow!("config must be a table"))?
+            .insert("jery_can_edit_vault".into(), toml::Value::Boolean(enabled));
+        let mut temporary = tempfile::NamedTempFile::new_in(dir)?;
+        use std::io::Write;
+        temporary
+            .as_file()
+            .set_permissions(std::fs::metadata(&path)?.permissions())?;
+        temporary.write_all(toml::to_string_pretty(&document)?.as_bytes())?;
+        temporary.as_file().sync_all()?;
+        temporary.persist(path)?;
+        Ok(())
     }
 
     fn load_from(dir: &Path) -> anyhow::Result<Self> {
@@ -69,5 +94,22 @@ mod tests {
         )
         .unwrap();
         assert_eq!(Config::load_from(dir.path()).unwrap().claude_path, "custom");
+        assert!(Config::load_from(dir.path()).unwrap().jery_can_edit_vault);
+        let original = std::fs::read_to_string(dir.path().join("mellorin.toml")).unwrap();
+        std::fs::write(
+            dir.path().join("mellorin.toml"),
+            format!("{original}custom_key = 'keep'\n"),
+        )
+        .unwrap();
+        Config::save_edit_permission(dir.path(), false).unwrap();
+        let updated = Config::load_from(dir.path()).unwrap();
+        assert!(!updated.jery_can_edit_vault);
+        assert_eq!(updated.claude_path, "custom");
+        let document: toml::Value =
+            toml::from_str(&std::fs::read_to_string(dir.path().join("mellorin.toml")).unwrap())
+                .unwrap();
+        assert_eq!(document["custom_key"].as_str(), Some("keep"));
+        Config::save_edit_permission(dir.path(), true).unwrap();
+        assert!(Config::load_from(dir.path()).unwrap().jery_can_edit_vault);
     }
 }

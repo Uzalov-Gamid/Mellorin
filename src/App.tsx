@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Sidebar } from "./shell/Sidebar";
 import { resolveSubjects, SUBJECTS, type Subject } from "./subjects";
 import { vaultSubjects } from "./subprocess";
-import { getConfig } from "./subprocess";
+import { VaultSettings } from "./shell/VaultSettings";
 import { useJery } from "./useJery";
 import { AppShell } from "./shell/AppShell";
 import { screens, ScreenPanels, screenFromHash, type ScreenId } from "./screens";
@@ -23,17 +23,10 @@ export default function App() {
   const [taskBusy, setTaskBusy] = useState(false);
   const [taskError, setTaskError] = useState<string | null>(null);
   const [settings, setSettings] = useState(false);
-  const [vault, setVault] = useState("Загрузка…");
   useEffect(() => {
     const changed = () => setScreen(screenFromHash(window.location.hash));
     window.addEventListener("hashchange", changed);
     return () => window.removeEventListener("hashchange", changed);
-  }, []);
-  useEffect(() => {
-    let active = true;
-    getConfig().then(config => { if (active) setVault(config.vault_path); })
-      .catch((reason: unknown) => { if (active) setVault(`Ошибка: ${String(reason)}`); });
-    return () => { active = false; };
   }, []);
   useEffect(() => {
     let active = true;
@@ -60,7 +53,7 @@ export default function App() {
     onToday={() => { setExpanded(true); void jery.sendText(TODAY_PROMPT); }}
     sidebar={<Sidebar subjects={subjects} state={snapshot.state} today={snapshot.today} active={screen} connected={jery.running} footer={<>
       <button aria-label="Настройки" aria-expanded={settings} onClick={() => setSettings(value => !value)}>◐</button>
-      {settings && <div className="settings-popover" role="dialog" aria-label="Настройки"><h2>Хранилище</h2><p>{vault}</p><button onClick={() => setSettings(false)}>Закрыть</button></div>}
+      {settings && <VaultSettings onClose={() => setSettings(false)} />}
     </>} />}>
     <JeryBlocks jery={jery} />
     {taskError && <p role="alert">{taskError}</p>}

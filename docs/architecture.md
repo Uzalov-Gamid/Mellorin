@@ -60,3 +60,11 @@ Two narrowly scoped Rust commands seed the fixed bundled English format and crea
 ## JERY reply blocks (Stage 8)
 
 The frontend parses accumulated assistant text after each delta using `parseReply`; fragmented fences and JSON stay hidden until complete. Ordinary code fences are preserved. Each complete single block/array passes the existing bounded format validator. Chat bubbles and the bottom strip use the filtered text, while `JeryBlocks` renders validated material above the current screen with a shared block context. Invalid or truncated sections show diagnostics. Buttons wait until the response completes and send user-triggered intents through the same chat lifecycle. No automatic format/file changes. Protocol: [jery-protocol.md](jery-protocol.md), also appended once to `.mellorin/README.md` by learning initialization.
+
+## Vault edit permission (Stage 9a)
+
+`jery_can_edit_vault = true` defaults to the permission granted for this app. Chat adds `--permission-mode acceptEdits` only when enabled, retaining cwd = vault. One-shot translation/explanation helpers keep their existing read-oriented invocation and cwd. There is no bypass-permissions flag. Reads remain governed by normal CLI rules; shell, network and outside-directory writes gain no extra approval from Mellorin. Existing CLI settings still apply; this flag is not an OS sandbox.
+
+The settings popover persists the toggle atomically while preserving other TOML values. Changing it stops the current chat process; the next user request reconnects with the new permission. When false Mellorin omits the flag (the CLI's existing settings still apply). The local task checkbox remains available independently.
+
+Synthetic CLI regression on 2026-11-15 confirmed Write/Edit inside the vault for `.mellorin/today.json`, `formats/english-reading.json` and `Learning/English/reading/process.md`; both a relative `../outside.txt` and absolute outside write were attempted and denied by the CLI. No personal vault or Claude settings were changed.

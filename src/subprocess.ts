@@ -5,6 +5,7 @@ export interface Config {
   vault_path: string;
   claude_path: string;
   theme: string;
+  jery_can_edit_vault: boolean;
 }
 export interface ChatDelta { text: string }
 export interface ChatError { message: string }
@@ -29,3 +30,5 @@ export interface Explanation { phrases: { text: string; ru: string }[] }
 export type VocabStatus = "learning" | "focus" | "known";
 export const explainSentence = (sentence: string): Promise<Explanation> => invoke<Explanation>("explain_sentence", { sentence });
 export const vocabSetStatus = (word: string, status: VocabStatus): Promise<void> => invoke<void>("vocab_set_status", { word, status });
+
+export const setEditPermission = (enabled: boolean): Promise<void> => invoke("config_set_edit_permission", { enabled });
