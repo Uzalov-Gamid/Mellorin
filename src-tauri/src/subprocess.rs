@@ -263,7 +263,11 @@ impl SubprocessManager {
         if self.is_running() {
             return Ok(());
         }
-        let mut child = Command::new(&config.claude_path)
+        let mut command = Command::new(&config.claude_path);
+        if config.jery_can_edit_vault {
+            command.args(["--permission-mode", "acceptEdits"]);
+        }
+        let mut child = command
             .args([
                 "-p",
                 "--input-format",

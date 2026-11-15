@@ -103,6 +103,20 @@ fn config_get(app: AppHandle) -> Result<Config, String> {
 }
 
 #[tauri::command]
+async fn config_set_edit_permission(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    enabled: bool,
+) -> Result<(), String> {
+    state
+        .subprocess
+        .stop()
+        .await
+        .map_err(|err| err.to_string())?;
+    Config::set_edit_permission(&app, enabled).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 async fn subprocess_start(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
     let config = Config::load(&app).map_err(|err| err.to_string())?;
     let app_out = app.clone();
@@ -179,6 +193,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             config_get,
+            config_set_edit_permission,
             format_seed,
             format_request_block,
             vault_subjects,
