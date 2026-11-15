@@ -1,37 +1,25 @@
-Mellorin Source-Available License
-
 Copyright (c) 2026 Gamid Uzalov. All rights reserved.
 
-1. Scope and effective date
-This license applies to Mellorin source code and accompanying original
-materials from the commit introducing this license onward. Earlier versions
-published under the MIT License, including tags mvp and v0.1.0, remain available
-under that license; this license does not revoke rights already granted.
+This software and its source code are proprietary. The source is published
+for viewing only. No license is granted. Without prior written permission from
+the copyright holder you may not use, run, copy, modify, merge, publish,
+distribute, sublicense, sell, host as a service, create derivative works from,
+or use the software to train or fine-tune machine learning models, for
+commercial or non-commercial purposes.
 
-2. Viewing the source
-You may view and read the source. Viewing and forking within GitHub remain
-governed by GitHub's Terms of Service; this license does not restrict rights
-GitHub grants under those terms.
+Viewing and forking on GitHub are governed by GitHub's Terms of Service; this
+notice does not restrict the rights GitHub grants under them.
 
-3. Prior written permission required
-Except for section 2, any use requires prior written permission from Gamid
-Uzalov. Without that permission, you may not run, copy, modify, redistribute,
-publish, sublicense, create derivative works from, train or fine-tune models
-on, commercially or non-commercially use, or host this software as a service.
-Public availability of the source grants no additional permission.
+Versions published before this notice under the MIT License (including the
+tags mvp and v0.1.0) remain available under that license; this notice does not
+revoke rights already granted.
 
-4. Individual permissions
-The copyright holder may grant permission in writing to a named person or
-organization, specifying the permitted uses and conditions. Permission to one
-recipient does not grant permission to anyone else. Request permission through
-the copyright holder's GitHub profile: https://github.com/Uzalov-Gamid.
-
-5. Third-party materials
 Third-party dependencies and materials remain subject to their own licenses.
-This license does not restrict rights granted by those licenses. See
-THIRD-PARTY-NOTICES for the dependency inventory.
+See THIRD-PARTY-NOTICES.
 
-6. Disclaimer
+To request permission, contact the copyright holder through
+https://github.com/Uzalov-Gamid.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. TO THE MAXIMUM EXTENT

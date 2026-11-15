@@ -1,6 +1,6 @@
 # Licensing
 
-Mellorin uses the [Mellorin Source-Available License](../LICENSE), copyright
+Mellorin is published under an [all rights reserved](../LICENSE) notice, copyright
 2026 Gamid Uzalov. The source is publicly readable. Other uses, including
 running, modification, redistribution, derivatives, model training and hosted
 services, require prior written permission. It is not an open-source license.

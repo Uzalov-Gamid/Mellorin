@@ -1,7 +1,7 @@
 # <img src="src-tauri/icons/128x128.png" width="64" height="64" alt="Mellorin app icon"> Mellorin
 
 [![CI · develop](https://github.com/Uzalov-Gamid/Mellorin/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Uzalov-Gamid/Mellorin/actions/workflows/ci.yml)
-[![License: Source available](https://img.shields.io/badge/license-permission_required-blue.svg)](LICENSE)
+[![License: All rights reserved](https://img.shields.io/badge/license-all_rights_reserved-lightgrey.svg)](LICENSE)
 ![Source version: 0.1.0](https://img.shields.io/badge/source_version-0.1.0-blue)
 ![Stage: pre-alpha](https://img.shields.io/badge/stage-pre--alpha-yellow)
 
@@ -103,4 +103,4 @@ See the [implemented architecture](docs/architecture.md) for component boundarie
 
 ## License
 
-[Mellorin Source-Available License](LICENSE). The source is publicly readable; running, modifying or redistributing it requires prior written permission from [Gamid Uzalov](https://github.com/Uzalov-Gamid). This is not an open-source license. Earlier MIT versions, including `mvp` and `v0.1.0`, retain their MIT license. See [licensing details](docs/LICENSING.md) and [third-party notices](THIRD-PARTY-NOTICES).
+[All rights reserved](LICENSE). The source is publicly readable; using, running, modifying or redistributing it requires prior written permission from [Gamid Uzalov](https://github.com/Uzalov-Gamid). This is not an open-source license. Earlier MIT versions, including `mvp` and `v0.1.0`, retain their MIT license. See [licensing details](docs/LICENSING.md) and [third-party notices](THIRD-PARTY-NOTICES).
