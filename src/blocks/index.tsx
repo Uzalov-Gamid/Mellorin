@@ -1,3 +1,4 @@
+import { WritingStudy } from './WritingStudy';
 import { ListeningLesson } from './ListeningStudy';
 import { WordStudy } from './WordStudy';
 import { useEffect, useState } from 'react';
@@ -5,7 +6,7 @@ import { ReadingText, ReadingPhrases, ReadingWord } from '../TextViewer';
 import { Button, Card, NightCard, Collapsible, Table, Segments, StepPills } from '../ui';
 import { useBlocks } from './context';
 import type { Block, Data } from './schema';
-export const blockTypes = ['listening-lesson', 'word-study', 'text', 'phrase-breakdown', 'word-card', 'quiz', 'flashcard', 'table', 'audio-player', 'code', 'query', 'checklist', 'timer', 'progress', 'collapsible-answers', 'night-code-card', 'step-pills'];
+export const blockTypes = ['writing-study', 'listening-lesson', 'word-study', 'text', 'phrase-breakdown', 'word-card', 'quiz', 'flashcard', 'table', 'audio-player', 'code', 'query', 'checklist', 'timer', 'progress', 'collapsible-answers', 'night-code-card', 'step-pills'];
 export function safeAudio(value: string): string | undefined {
   try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) ? url.href : undefined; } catch { return undefined; }
 }
@@ -31,6 +32,7 @@ export function BlockView({ block }: { block: Block }) {
   else if (p.source === 'reading' && block.type === 'phrase-breakdown') content = ReadingPhrases(context.reading);
   else if (p.source === 'reading' && block.type === 'word-card') content = ReadingWord(context.reading);
   else switch (block.type) {
+    case 'writing-study': content = <WritingStudy />; break;
     case 'listening-lesson': content = <ListeningLesson />; break;
     case 'word-study': content = <WordStudy />; break;
     case 'text': content = <PlainText text={str('text') || context.message} numbered={p.sentenceNumbers === 'after'} />; break;
