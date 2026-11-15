@@ -4,7 +4,7 @@
 
 ```
 ┌─────────────────────────────────────────┐
-│                  Pulse                  │
+│                  Mellorin                  │
 │  ┌─────────────────┐  ┌──────────────┐  │
 │  │   Chat (JERY)   │  │  Visual UI   │  │
 │  │  React/TS       │  │  panels,     │  │
@@ -45,14 +45,14 @@
 - **SubprocessManager** — spawns and manages `claude` CLI process, handles stdin/stdout streaming
 - **VaultReader** — reads Markdown files from the vault directory
 - **VaultWriter** — writes updated Markdown back (vocabulary, notes, progress)
-- **ConfigManager** — loads `pulse.toml` from the vault or app config dir
+- **ConfigManager** — loads `mellorin.toml` from the vault or app config dir
 
 ### Frontend (React/TypeScript)
 
 - **ChatPanel** — message thread with JERY, streams Claude output
 - **TextViewer** — renders text with clickable sentences/words, inline translation
 - **WordStudy** — card-based vocabulary review (flip, sentence, dictation modes)
-- **SettingsPanel** — UI over `pulse.toml`
+- **SettingsPanel** — UI over `mellorin.toml`
 
 ## Data flow: chat message
 
@@ -65,7 +65,7 @@ User types → ChatPanel → Tauri IPC → SubprocessManager
 
 ## Configuration
 
-`pulse.toml` lives in the vault root or `~/.config/pulse/pulse.toml`.
+`mellorin.toml` lives in the vault root or `~/.config/mellorin/mellorin.toml`.
 
 ```toml
 [vault]
@@ -80,6 +80,6 @@ theme = "dark"
 font_size = 14
 ```
 
-## AI: how JERY runs inside Pulse
+## AI: how JERY runs inside Mellorin
 
 The Claude subprocess is started with `--system-prompt` pointing to the vault's `CLAUDE.md`. This means JERY has the same rules and context as in a normal Claude Code session. The vault path is injected so Claude can read and write files directly.

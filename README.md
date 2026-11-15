@@ -1,4 +1,4 @@
-# Pulse
+# Mellorin
 
 A desktop study companion. Chat with your AI assistant, work with texts, study words, and visualize learning — all in one place, backed by your own knowledge vault.
 

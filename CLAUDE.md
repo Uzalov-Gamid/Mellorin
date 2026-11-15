@@ -2,7 +2,7 @@
 
 ## Project
 
-Pulse is a desktop study companion built with Tauri. It wraps Claude Code as a subprocess so the user can chat with JERY (their personal AI assistant) through a native UI, while all data stays in local Markdown files.
+Mellorin is a desktop study companion built with Tauri. It wraps Claude Code as a subprocess so the user can chat with JERY (their personal AI assistant) through a native UI, while all data stays in local Markdown files.
 
 ## Stack
 
@@ -57,7 +57,7 @@ Special tags:
 
 ## What JERY does here
 
-JERY is the AI persona that runs inside Pulse. It reads the same CLAUDE.md and vault rules as in Obsidian MainStorage. When implementing chat features, the system prompt injected into the Claude subprocess must load from the vault's CLAUDE.md, not be hardcoded here.
+JERY is the AI persona that runs inside Mellorin. It reads the same CLAUDE.md and vault rules as in Obsidian MainStorage. When implementing chat features, the system prompt injected into the Claude subprocess must load from the vault's CLAUDE.md, not be hardcoded here.
 
 ## Issues and PRs
 
