@@ -31,9 +31,9 @@ claude_path = "claude"
 theme = "dark"
 ```
 
-These are the defaults used when creating a missing config; existing configuration is preserved. A leading `~/` in `vault_path` expands to the home directory. The vault directory must exist before launching the CLI. The frontend displays the configured path; there is no settings editor or theme switcher.
+These are the defaults used when creating a missing config; existing configuration is preserved. A leading `~/` in `vault_path` expands to the home directory. The vault directory must exist before launching the CLI. The settings popover displays the configured path and the JERY vault-edit toggle. The app uses the light design tokens.
 
-`vocab_add` serializes writes within the app, validates single-line input, creates the vocabulary directory as needed, and appends `- **word** — sentence` to `vocabulary/mywords-list.md`. Duplicate detection matches the exact word, including case. This is the backend's implemented vault write operation; there is no general vault reader, indexer, or notes/progress manager.
+`vocab_add` serializes writes within the app, validates single-line input, creates the vocabulary directory as needed, and appends `- **word** — sentence` to `vocabulary/mywords-list.md`. Duplicate detection matches the exact word, including case. Other bounded vault commands and state/format operations are described below.
 
 ## Current limits
 
@@ -55,7 +55,7 @@ Home task completion uses a dedicated `today_set_done` command after a user clic
 
 `BlockContext` carries shared reading state, the current JERY message/data, and an explicit user-triggered intent callback. Format strings are escaped React text. Audio accepts only absolute HTTP(S). Code/query fields never execute. `writeBack` sends an intent and answer data to the existing JERY conversation only after a button click; it has no path or generic write command.
 
-Two narrowly scoped Rust commands seed the fixed bundled English format and create deduplicated missing-block notes. Canonical inside-vault directory checks and create-new semantics prevent external symlink writes and replacement of existing files. Seed also appends the format contract once to the vault's `.mellorin/README.md`, preserving previous instructions. Errors stay visible while the last valid/bundled reading format remains usable. Request badges, chat block protocol, apply and rollback remain future stages.
+Two narrowly scoped Rust commands seed the fixed bundled English format and create deduplicated missing-block notes. Canonical inside-vault directory checks and create-new semantics prevent external symlink writes and replacement of existing files. Seed also appends the format contract once to the vault's `.mellorin/README.md`, preserving previous instructions. Errors stay visible while the last valid/bundled reading format remains usable. Missing-block request notes are available; request badges are a later stage. The implemented reply and apply protocols are described below.
 
 ## JERY reply blocks (Stage 8)
 
