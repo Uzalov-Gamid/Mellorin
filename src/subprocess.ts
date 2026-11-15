@@ -1,29 +1,23 @@
 import { invoke } from "@tauri-apps/api/core";
-import { listen, UnlistenFn } from "@tauri-apps/api/event";
+import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
-export type OutputHandler = (line: string) => void;
-export type ExitHandler = () => void;
-
-export async function startSubprocess(claudePath: string): Promise<void> {
-  await invoke("subprocess_start", { claudePath });
+export interface Config {
+  vault_path: string;
+  claude_path: string;
+  theme: string;
 }
+export interface ChatDelta { text: string }
+export interface ChatError { message: string }
+export type ChatDone = Record<string, never>;
 
-export async function sendMessage(message: string): Promise<void> {
-  await invoke("subprocess_send", { message });
-}
-
-export async function stopSubprocess(): Promise<void> {
-  await invoke("subprocess_stop");
-}
-
-export async function getStatus(): Promise<boolean> {
-  return invoke("subprocess_status");
-}
-
-export function onOutput(handler: OutputHandler): Promise<UnlistenFn> {
-  return listen<string>("subprocess-output", (e) => handler(e.payload));
-}
-
-export function onExit(handler: ExitHandler): Promise<UnlistenFn> {
-  return listen<void>("subprocess-exit", () => handler());
-}
+export const getConfig = (): Promise<Config> => invoke<Config>("config_get");
+export const startSubprocess = (): Promise<void> => invoke<void>("subprocess_start");
+export const sendMessage = (message: string): Promise<void> => invoke<void>("subprocess_send", { message });
+export const stopSubprocess = (): Promise<void> => invoke<void>("subprocess_stop");
+export const getStatus = (): Promise<boolean> => invoke<boolean>("subprocess_status");
+export const translate = (word: string, sentence: string): Promise<string> => invoke<string>("translate", { word, sentence });
+export const vocabAdd = (word: string, sentence: string): Promise<void> => invoke<void>("vocab_add", { word, sentence });
+export const onChatDelta = (handler: (payload: ChatDelta) => void): Promise<UnlistenFn> => listen<ChatDelta>("chat-delta", e => handler(e.payload));
+export const onChatDone = (handler: () => void): Promise<UnlistenFn> => listen<ChatDone>("chat-done", () => handler());
+export const onChatError = (handler: (payload: ChatError) => void): Promise<UnlistenFn> => listen<ChatError>("chat-error", e => handler(e.payload));
+export const onExit = (handler: () => void): Promise<UnlistenFn> => listen<null>("subprocess-exit", () => handler());
