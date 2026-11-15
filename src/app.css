@@ -469,3 +469,10 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 .home-date:nth-of-type(2) strong { color: var(--emerald); }
 .home-date:nth-of-type(3) strong { color: var(--ash); }
 .home-subject-link p, .home-row > span { overflow-wrap: anywhere; min-width: 0; }
+
+.library { margin: 0 0 16px }
+.library-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px }
+.library-item { border: 1px solid var(--sand); background: var(--paper); color: var(--ink); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: 12px; cursor: pointer }
+.library-item:hover, .library-current { border-color: var(--ember); color: var(--ember) }
+.library-note { margin-top: 12px; padding: 14px 16px; background: var(--paper); border: 1px solid var(--sand); border-radius: 8px; line-height: 1.7; overflow-x: auto }
+.library-note table { border-collapse: collapse } .library-note th, .library-note td { border: 1px solid var(--sand); padding: 3px 8px }

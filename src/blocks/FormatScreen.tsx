@@ -9,6 +9,7 @@ import { localDate } from '../homeData';
 import wordsBuiltin from '../../formats/english-words.json';
 import builtin from '../../formats/english-reading.json';
 import { BlockContext } from './context';
+import { Library } from './Library';
 import { BlockView, blockTypes } from './index';
 import { parseFormat, simpleName, type Data, type Format } from './schema';
 export const JeryFormatContext = createContext<{ canSend?: boolean; intentError?: string | null; message: string; data: Data; intent: (intent: string, value: Data) => void }>({ message: '', data: null, intent: () => {} });
@@ -58,6 +59,7 @@ export function FormatScreen({ subject = 'english', skill = 'reading' }: { subje
     return () => { active = false; };
   }, [format, path, subject, skill]);
   return <BlockContext.Provider value={{ ...jery, reading }}><section aria-label="Формат урока">
+    <Library subject={subject} skill={skill} onReading={text => { reading.setText(text); reading.setEditing(false); }} />
     {error && <p role="alert">{error}</p>}{requestError && <p role="alert">{requestError}</p>}
     {format.steps.map(step => <section key={step.id} aria-label={step.title}>{format.steps.length > 1 && <h2>{step.title}</h2>}{step.blocks.map((block, i) => <BlockView key={`${i}:${JSON.stringify(block)}`} block={block} />)}</section>)}
   </section></BlockContext.Provider>;
