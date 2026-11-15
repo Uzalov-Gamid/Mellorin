@@ -228,12 +228,14 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 }
 
 .sidebar { flex-shrink: 0; width: 272px; background: var(--linen); border-right: 1px solid var(--sand); display: flex; flex-direction: column; padding: 14px 16px 18px; gap: 10px; overflow-y: auto; }
-.sidebar-collapsed { width: 72px; padding: 14px 0 16px; align-items: center; gap: 12px; }
+.sidebar-collapsed { width: 80px; padding: 14px 0 16px; align-items: center; gap: 12px; }
 .sidebar button { font: inherit; cursor: pointer; color: var(--stone); }
 .sidebar-window-reserve { height: 24px; flex-shrink: 0; width: 100%; }
 .sidebar-top { display: flex; align-items: center; gap: 12px; padding-bottom: 8px; width: 100%; }
 .shell-actions { display: flex; align-items: center; gap: 8px; }
-.shell-actions .ui-button { font-size: 12px; line-height: 18px; padding: 3px 12px; text-decoration: none; white-space: nowrap; }
+.shell-refresh { width: 24px; height: 24px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; color: var(--stone); font: inherit; font-size: 14px; line-height: 1; cursor: pointer; }
+.shell-refresh:hover:not(:disabled) { color: var(--ember); background: var(--linen); }
+.shell-refresh:disabled { color: var(--ash); cursor: default; }
 .sidebar-add { display: flex; align-items: center; gap: 10px; border: 1px dashed var(--dune); background: transparent; border-radius: 12px; padding: 8px 12px; text-align: left; font-size: 13px !important; margin-top: 2px; }
 .sidebar-add > span { width: 22px; height: 22px; flex-shrink: 0; border: 1px dashed var(--dune); border-radius: 50%; display: grid; place-items: center; }
 .sidebar-collapsed .sidebar-add { padding: 0; border: 0; align-self: center; }

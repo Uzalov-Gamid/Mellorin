@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getDiagnostics, saveSettings, type Diagnostics } from "./bridge";
 import "./settings.css";
+import { ChangeHistory } from "../../changes/ChangeHistory";
 import { getConfig, setEditPermission, setTickTick, getTickTickStatus, type TickTickMode, type TickTickStatus } from "../../subprocess";
 
 export function SettingsScreen({ onClose }: { onClose: () => void }) {
@@ -80,6 +81,7 @@ export function SettingsScreen({ onClose }: { onClose: () => void }) {
         <div className="settings-row settings-between"><span>Тема</span><span className="settings-themes"><button className="settings-pill" disabled={busy || allowed === null} onClick={() => void persist()}>светлая</button><button className="settings-pill" disabled>тёмная · скоро</button></span></div>
         <label className="settings-row settings-between">Размер текста<span className="settings-size"><span>A</span><input aria-label="Размер текста" type="range" min="12" max="18" value={textSize} disabled={busy || allowed === null} onChange={e => void persist(Number(e.target.value))} /><span>A</span></span></label>
       </section>
+      <section className="settings-card settings-paper"><div className="settings-cap">◆ МАСТЕРСКАЯ</div><ChangeHistory onApplied={() => { window.dispatchEvent(new Event("mellorin-format-changed")); }} /></section>
     </div><div className="settings-column">
       <section className="settings-card"><div className="settings-cap">◆ ПРЕДМЕТЫ</div><div>Добавить, переименовать, переставить, архивировать.</div><button className="settings-btn settings-subjects" disabled title="Экран управления предметами готовится">Управлять предметами ›</button></section>
       <section className="settings-card"><div className="settings-cap">◆ ГОРЯЧИЕ КЛАВИШИ</div>{[["Свернуть и развернуть панель", "⌘ B"], ["Настройки", "⌘ ,"], ["Отправить JERY", "↵"], ["Развернуть чат", "⌘ J"]].map(([label, key]) => <div className="settings-kv" key={key}><span>{label}</span><kbd>{key}</kbd></div>)}</section>
