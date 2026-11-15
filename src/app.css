@@ -226,3 +226,43 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
   .jery-last { display: none; }
   .jery-entry { flex: 1; }
 }
+
+.sidebar { flex-shrink: 0; width: 272px; background: var(--linen); border-right: 1px solid var(--sand); display: flex; flex-direction: column; padding: 18px 14px; gap: 18px; overflow-y: auto; }
+.sidebar-collapsed { width: 72px; padding: 14px 10px; }
+.sidebar button { font: inherit; cursor: pointer; color: var(--stone); }
+.sidebar-top { display: flex; align-items: center; gap: 8px; }
+.sidebar-top > button { border: 1px solid var(--sand); border-radius: 8px; background: transparent; width: 30px; height: 28px; }
+.day-home { text-decoration: none; }
+.day-home-active .ui-ring > span { background: var(--peach); }
+.week-empty { flex: 1; text-align: center; font-size: 11px; color: var(--stone); }
+.sidebar-collapsed .sidebar-top { flex-direction: column-reverse; gap: 14px; }
+.sidebar-subjects { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.subject { border: 1px solid transparent; border-radius: 12px; }
+.subject-open { background: var(--cream); border-color: var(--sand); }
+.subject-heading { width: 100%; border: 0; background: none; display: flex; align-items: center; gap: 12px; padding: 10px 12px; text-align: left; }
+.subject-heading strong { font-size: 14px; font-weight: 400; color: var(--pine); }
+.subject-heading small { display: block; font-size: 11px; color: var(--stone); }
+.trail { position: relative; margin: 0 10px 12px 24px; }
+.trail::before { content: ""; position: absolute; left: -2px; top: 16px; bottom: 16px; width: 2px; background: linear-gradient(var(--flame) 0 var(--trail-percent), var(--sand) var(--trail-percent) 100%); }
+.trail-row { position: relative; display: flex; align-items: center; gap: 8px; padding: 5px 8px 5px 22px; border-radius: 6px; font-size: 13px; text-decoration: none; color: var(--ink); }
+.trail-row > span:nth-child(2) { flex: 1; }
+.trail-row small { font-size: 11px; color: var(--stone); }
+.trail-current { background: var(--peach); }
+.trail-node { position: absolute; left: -8px; top: 50%; margin-top: -7px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--dune); background: var(--cream); }
+.trail-current .trail-node { border: 4px solid var(--ember); background: var(--peach); }
+.trail-passed .trail-node { border-color: var(--flame); background: var(--flame); }
+.sidebar footer { display: flex; justify-content: space-between; align-items: center; gap: 8px; position: relative; }
+.sidebar footer > button { background: transparent; border: 0; color: var(--stone); }
+.sidebar .settings-popover { position: fixed; bottom: 64px; left: 16px; }
+.sidebar-collapsed .subject { border: 0; background: transparent; }
+.sidebar-collapsed .subject-heading { padding: 0 3px; }
+.sidebar-collapsed .subject-open .ui-ring > span { background: var(--peach); }
+.sidebar-collapsed .subject { margin-bottom: 8px; }
+.trail-mini { margin: 8px 0 0 25px; }
+.trail-mini .trail-row { height: 19px; padding: 0; }
+.trail-mini .trail-node { width: 10px; height: 10px; left: -6px; margin-top: -5px; }
+.trail-mini .trail-current { background: transparent; }
+.trail-mini .trail-current .trail-node { border-width: 3px; }
+.empty-screen { display: grid; gap: 16px; }
+.empty-screen h1 { color: var(--navy); font-size: 22px; }
+.empty-screen p { color: var(--stone); }

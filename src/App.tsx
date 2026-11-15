@@ -1,4 +1,7 @@
 import { useEffect, useState } from "react";
+import { Sidebar } from "./shell/Sidebar";
+import { resolveSubjects, SUBJECTS, type Subject } from "./subjects";
+import { vaultSubjects } from "./subprocess";
 import { getConfig } from "./subprocess";
 import { useJery } from "./useJery";
 import { AppShell } from "./shell/AppShell";
@@ -9,6 +12,7 @@ import "./app.css";
 export default function App() {
   const jery = useJery();
   const [screen, setScreen] = useState<ScreenId>(() => screenFromHash(window.location.hash));
+  const [subjects, setSubjects] = useState<Subject[]>(SUBJECTS);
   const [expanded, setExpanded] = useState(false);
   const [settings, setSettings] = useState(false);
   const [vault, setVault] = useState("Загрузка…");
@@ -23,14 +27,20 @@ export default function App() {
       .catch((reason: unknown) => { if (active) setVault(`Ошибка: ${String(reason)}`); });
     return () => { active = false; };
   }, []);
-  const Screen = screens.find(item => item.id === screen)!.component;
+  useEffect(() => {
+    let active = true;
+    vaultSubjects().then(found => { if (active) setSubjects(resolveSubjects(found)); }).catch(() => { /* fallback labels, no progress claims */ });
+    return () => { active = false; };
+  }, []);
+  const Screen = screens.find(item => item.id === screen)?.component;
+  const selected = subjects.find(subject => subject.id === screen.split("/")[0]);
+  const skill = selected?.skills.find(item => item.id === screen.split("/")[1]);
   return <AppShell jery={jery} expanded={expanded} onToggleChat={() => setExpanded(value => !value)}
     onToday={() => { setExpanded(true); void jery.sendText(TODAY_PROMPT); }}
-    sidebar={<aside className="shell-placeholder"><a href="#english/reading">English › Чтение</a><footer>
-      <span className="caption">{jery.running ? "● JERY на связи" : "○ JERY"}</span>
+    sidebar={<Sidebar subjects={subjects} active={screen} connected={jery.running} footer={<>
       <button aria-label="Настройки" aria-expanded={settings} onClick={() => setSettings(value => !value)}>◐</button>
       {settings && <div className="settings-popover" role="dialog" aria-label="Настройки"><h2>Хранилище</h2><p>{vault}</p><button onClick={() => setSettings(false)}>Закрыть</button></div>}
-    </footer></aside>}>
-    <Screen />
+    </>} />}>
+    {Screen ? <Screen /> : <section className="empty-screen"><h1>{screen === "home" ? "Главная" : `${selected?.name || screen.split("/")[0]} › ${skill?.name || screen.split("/")[1]}`}</h1><p>Данных для этого экрана пока нет. Начни разговор с JERY.</p></section>}
   </AppShell>;
 }

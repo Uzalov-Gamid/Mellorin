@@ -44,6 +44,12 @@ async fn subprocess_start(app: AppHandle, state: State<'_, AppState>) -> Result<
 }
 
 #[tauri::command]
+fn vault_subjects(app: AppHandle) -> Result<Vec<vault::VaultSubject>, String> {
+    let config = Config::load(&app).map_err(|err| err.to_string())?;
+    vault::subjects(std::path::Path::new(&config.vault_path)).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 async fn vocab_add(app: AppHandle, word: String, sentence: String) -> Result<(), String> {
     let config = Config::load(&app).map_err(|err| err.to_string())?;
     static WRITE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -88,6 +94,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             config_get,
+            vault_subjects,
             vocab_add,
             translate,
             subprocess_start,

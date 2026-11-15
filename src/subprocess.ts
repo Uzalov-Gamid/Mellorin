@@ -21,3 +21,6 @@ export const onChatDelta = (handler: (payload: ChatDelta) => void): Promise<Unli
 export const onChatDone = (handler: () => void): Promise<UnlistenFn> => listen<ChatDone>("chat-done", () => handler());
 export const onChatError = (handler: (payload: ChatError) => void): Promise<UnlistenFn> => listen<ChatError>("chat-error", e => handler(e.payload));
 export const onExit = (handler: () => void): Promise<UnlistenFn> => listen<null>("subprocess-exit", () => handler());
+
+export interface VaultSubject { name: string; skills: string[] }
+export const vaultSubjects = (): Promise<VaultSubject[]> => invoke<VaultSubject[]>("vault_subjects");

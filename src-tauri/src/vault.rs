@@ -49,3 +49,66 @@ mod tests {
         );
     }
 }
+
+#[derive(Debug, serde::Serialize)]
+pub struct VaultSubject {
+    pub name: String,
+    pub skills: Vec<String>,
+}
+
+pub fn subjects(vault: &Path) -> anyhow::Result<Vec<VaultSubject>> {
+    let root = vault.canonicalize()?;
+    let learning = root.join("Learning");
+    if !learning.exists() {
+        return Ok(Vec::new());
+    }
+    anyhow::ensure!(
+        learning.canonicalize()?.starts_with(&root),
+        "Learning leaves vault"
+    );
+    fn directories(path: &Path) -> anyhow::Result<Vec<String>> {
+        let mut names = Vec::new();
+        for entry in std::fs::read_dir(path)? {
+            let entry = entry?;
+            if entry.file_type()?.is_dir() {
+                let name = entry.file_name().to_string_lossy().into_owned();
+                if !name.starts_with('.') {
+                    names.push(name);
+                }
+            }
+        }
+        names.sort();
+        Ok(names)
+    }
+    directories(&learning)?
+        .into_iter()
+        .map(|name| {
+            let skills = directories(&learning.join(&name))?;
+            Ok(VaultSubject { name, skills })
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod subject_tests {
+    use super::*;
+    #[test]
+    fn discovers_subjects_and_skills_without_following_links() {
+        let vault = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(vault.path().join("Learning/English/reading")).unwrap();
+        std::fs::create_dir_all(vault.path().join("Learning/.hidden")).unwrap();
+        std::fs::write(vault.path().join("Learning/English/README.md"), "demo").unwrap();
+        #[cfg(unix)]
+        std::os::unix::fs::symlink("/tmp", vault.path().join("Learning/External")).unwrap();
+        let found = subjects(vault.path()).unwrap();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].name, "English");
+        assert_eq!(found[0].skills, ["reading"]);
+    }
+    #[test]
+    fn missing_learning_is_empty() {
+        assert!(subjects(tempfile::tempdir().unwrap().path())
+            .unwrap()
+            .is_empty());
+    }
+}
