@@ -61,7 +61,9 @@ impl SubprocessManager {
 
     pub async fn send(&self, message: &str) -> anyhow::Result<()> {
         let mut guard = self.stdin.lock().await;
-        let stdin = guard.as_mut().ok_or_else(|| anyhow::anyhow!("not running"))?;
+        let stdin = guard
+            .as_mut()
+            .ok_or_else(|| anyhow::anyhow!("not running"))?;
         stdin.write_all(format!("{message}\n").as_bytes()).await?;
         stdin.flush().await?;
         Ok(())
