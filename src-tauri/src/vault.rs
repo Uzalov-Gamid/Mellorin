@@ -64,7 +64,7 @@ pub fn vocab_set_status(vault: &Path, word: &str, status: &str) -> anyhow::Resul
         }
         updated.push_str(&format!("{prefix}{status} -->\n"));
     }
-    std::fs::write(path, updated)?;
+    replace_file(&path, updated.as_bytes())?;
     Ok(())
 }
 
@@ -146,4 +146,30 @@ mod subject_tests {
             .unwrap()
             .is_empty());
     }
+}
+
+// Write beside the original and rename only after the complete replacement is durable.
+fn replace_file(path: &Path, contents: &[u8]) -> anyhow::Result<()> {
+    use std::sync::atomic::{AtomicU64, Ordering};
+    static NEXT: AtomicU64 = AtomicU64::new(0);
+    let temp = path.with_file_name(format!(
+        ".mywords-list.{}.{}.tmp",
+        std::process::id(),
+        NEXT.fetch_add(1, Ordering::Relaxed)
+    ));
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(&temp)?;
+    let result = (|| -> anyhow::Result<()> {
+        file.set_permissions(std::fs::metadata(path)?.permissions())?;
+        file.write_all(contents)?;
+        file.sync_all()?;
+        std::fs::rename(&temp, path)?;
+        Ok(())
+    })();
+    if result.is_err() {
+        let _ = std::fs::remove_file(&temp);
+    }
+    result
 }

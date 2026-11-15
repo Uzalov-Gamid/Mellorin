@@ -425,3 +425,22 @@ fn vocabulary_statuses_preserve_legacy_lines_and_validate_inputs() {
     vault::vocab_add(dir.path(), "bank", "No duplicate").unwrap();
     assert_eq!(std::fs::read_to_string(path).unwrap(), original);
 }
+
+#[cfg(unix)]
+#[test]
+fn status_updates_preserve_private_permissions_and_leave_no_temporary_files() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = demo();
+    vault::vocab_add(dir.path(), "bank", "Synthetic sentence").unwrap();
+    let path = dir.path().join("vocabulary/mywords-list.md");
+    std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o600)).unwrap();
+    vault::vocab_set_status(dir.path(), "bank", "focus").unwrap();
+    assert_eq!(
+        std::fs::metadata(&path).unwrap().permissions().mode() & 0o777,
+        0o600
+    );
+    assert_eq!(
+        std::fs::read_dir(path.parent().unwrap()).unwrap().count(),
+        1
+    );
+}
