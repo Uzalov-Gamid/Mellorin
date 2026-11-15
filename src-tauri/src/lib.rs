@@ -4,6 +4,7 @@ mod formats;
 mod learning;
 mod requests;
 mod subprocess;
+mod ticktick;
 mod vault;
 
 use config::Config;
@@ -153,6 +154,26 @@ async fn config_set_edit_permission(
 }
 
 #[tauri::command]
+async fn ticktick_status(app: AppHandle) -> Result<ticktick::ConnectionStatus, String> {
+    let config = Config::load(&app).map_err(|err| err.to_string())?;
+    Ok(ticktick::status(&config).await)
+}
+
+#[tauri::command]
+async fn config_set_ticktick(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    mode: config::TickTickMode,
+) -> Result<(), String> {
+    state
+        .subprocess
+        .stop()
+        .await
+        .map_err(|err| err.to_string())?;
+    Config::set_ticktick(&app, mode).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 async fn subprocess_start(app: AppHandle, state: State<'_, AppState>) -> Result<(), String> {
     let config = Config::load(&app).map_err(|err| err.to_string())?;
     let app_out = app.clone();
@@ -234,6 +255,8 @@ pub fn run() {
             change_rollback,
             change_recover,
             config_get,
+            config_set_ticktick,
+            ticktick_status,
             requests_snapshot,
             config_set_edit_permission,
             format_seed,

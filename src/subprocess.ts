@@ -6,6 +6,7 @@ export interface Config {
   claude_path: string;
   theme: string;
   jery_can_edit_vault: boolean;
+  jery_ticktick: TickTickMode;
 }
 export interface ChatDelta { text: string }
 export interface ChatError { message: string }
@@ -32,3 +33,8 @@ export const explainSentence = (sentence: string): Promise<Explanation> => invok
 export const vocabSetStatus = (word: string, status: VocabStatus): Promise<void> => invoke<void>("vocab_set_status", { word, status });
 
 export const setEditPermission = (enabled: boolean): Promise<void> => invoke("config_set_edit_permission", { enabled });
+
+export type TickTickMode = "full" | "read" | "off";
+export type TickTickStatus = "connected" | "needs_authentication" | "not_found" | "unavailable";
+export const setTickTick = (mode: TickTickMode): Promise<void> => invoke("config_set_ticktick", { mode });
+export const getTickTickStatus = (): Promise<TickTickStatus> => invoke("ticktick_status");

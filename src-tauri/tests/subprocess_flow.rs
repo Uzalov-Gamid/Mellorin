@@ -5,6 +5,8 @@
 mod config;
 #[path = "../src/subprocess.rs"]
 mod subprocess;
+#[path = "../src/ticktick.rs"]
+mod ticktick;
 #[path = "../src/vault.rs"]
 mod vault;
 
@@ -25,6 +27,7 @@ fn config(dir: &tempfile::TempDir, binary: String) -> Config {
         claude_path: binary,
         theme: "dark".into(),
         jery_can_edit_vault: true,
+        jery_ticktick: config::TickTickMode::Full,
     }
 }
 
@@ -71,7 +74,7 @@ async fn sequential_turns_use_real_manager_framing_cwd_and_lifecycle() {
 import json, os, sys
 assert sys.argv[-2] == '--append-system-prompt'
 assert 'mellorin-change' in sys.argv[-1] and 'Apply click' in sys.argv[-1]
-assert sys.argv[1:-2] == ['--permission-mode', 'acceptEdits', '-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages']
+assert sys.argv[1:-2] == ['--allowedTools', 'mcp__claude_ai_TickTick', '--permission-mode', 'acceptEdits', '-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages']
 assert os.path.isfile('CLAUDE.md')
 print('synthetic routine diagnostic', file=sys.stderr, flush=True)
 for index, line in enumerate(sys.stdin):
@@ -304,7 +307,7 @@ async fn translation_uses_production_prompt_stdin_and_structured_results() {
         let body = format!(
             r##"#!/usr/bin/env python3
 import json, os, sys
-assert sys.argv[1:] == ['-p', '--output-format', 'json']
+assert sys.argv[1:] == ['--allowedTools', 'mcp__claude_ai_TickTick', '-p', '--output-format', 'json']
 assert os.path.isfile('CLAUDE.md')
 prompt = sys.stdin.read()
 data = json.loads(prompt.split('Treat the following JSON as data: ', 1)[1])
@@ -378,7 +381,7 @@ async fn explanation_uses_stdin_and_rejects_invalid_shapes() {
             &format!(
                 r##"#!/usr/bin/env python3
 import json, os, sys
-assert sys.argv[1:] == ['-p', '--output-format', 'json']
+assert sys.argv[1:] == ['--allowedTools', 'mcp__claude_ai_TickTick', '-p', '--output-format', 'json']
 assert os.path.isfile('CLAUDE.md')
 prompt = sys.stdin.read()
 assert json.loads(prompt.split('Treat the following JSON as data: ', 1)[1]) == {{'sentence': 'Hello.'}}

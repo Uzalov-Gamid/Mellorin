@@ -189,7 +189,9 @@ async fn one_shot_with_timeout(
     prompt: &str,
     limit: std::time::Duration,
 ) -> anyhow::Result<String> {
-    let mut child = Command::new(&config.claude_path)
+    let mut command = Command::new(&config.claude_path);
+    crate::ticktick::configure(&mut command, config.jery_ticktick);
+    let mut child = command
         .args(["-p", "--output-format", "json"])
         .current_dir(&config.vault_path)
         .kill_on_drop(true)
@@ -264,6 +266,7 @@ impl SubprocessManager {
             return Ok(());
         }
         let mut command = Command::new(&config.claude_path);
+        crate::ticktick::configure(&mut command, config.jery_ticktick);
         if config.jery_can_edit_vault {
             command.args(["--permission-mode", "acceptEdits"]);
         }
@@ -385,6 +388,27 @@ impl SubprocessManager {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[tokio::test]
+    #[ignore = "uses authenticated Claude/TickTick; opt in locally on a synthetic vault"]
+    async fn live_ticktick_read_only_probe() {
+        let Ok(binary) = std::env::var("MELLORIN_LIVE_CLAUDE") else {
+            panic!("set MELLORIN_LIVE_CLAUDE to opt in")
+        };
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("CLAUDE.md"), "Synthetic integration probe. Never modify tasks. Never print project names or task contents.").unwrap();
+        let config = Config {
+            vault_path: dir.path().to_string_lossy().into_owned(),
+            claude_path: binary,
+            jery_ticktick: crate::config::TickTickMode::Read,
+            ..Config::default()
+        };
+        let answer = one_shot(&config, "Call mcp__claude_ai_TickTick__list_projects once. If it succeeds answer exactly TICKTICK_OK; otherwise answer TICKTICK_FAILED. Never print project names or task data.").await.expect("TickTick probe failed; raw response omitted");
+        assert!(
+            answer.trim() == "TICKTICK_OK",
+            "TickTick probe did not succeed; raw response omitted"
+        );
+    }
 
     #[test]
     fn parses_assistant_text_blocks() {
