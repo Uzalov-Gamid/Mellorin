@@ -353,3 +353,12 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 .format-block fieldset label { display: block; margin: var(--space-2) 0; }
 .format-block textarea { display: block; width: 100%; min-height: 120px; box-sizing: border-box; background: var(--paper); color: var(--ink); border: 1px solid var(--sand); border-radius: var(--radius); padding: var(--space-3); font: inherit; }
 .format-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.requests-badge { font-size: 11px; white-space: nowrap; }
+.requests-inbox { position: fixed; z-index: 50; top: 80px; right: 36px; width: 600px; max-width: calc(100vw - 40px); max-height: calc(100vh - 120px); overflow: auto; background: var(--paper, #f8f1e3); color: var(--ink, #2a1f1b); border: 1px solid var(--sand, #d6c8ab); border-radius: 12px; padding: 18px 22px; box-shadow: 0 8px 32px #2a1f1b22; }
+.requests-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.requests-inbox h2 { color: var(--navy, #1e3a5f); font-size: 20px; }
+.requests-inbox p { color: var(--stone, #6e6155); font-size: 12px; }
+.requests-inbox article { border-top: 1px solid var(--sand, #d6c8ab); padding-top: 12px; }
+.requests-inbox h3 { font-size: 14px; overflow-wrap: anywhere; }
+.requests-inbox pre { font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }

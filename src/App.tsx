@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Sidebar } from "./shell/Sidebar";
 import { resolveSubjects, SUBJECTS, type Subject } from "./subjects";
 import { vaultSubjects } from "./subprocess";
+import { RequestsInbox } from "./shell/RequestsInbox";
 import { VaultSettings } from "./shell/VaultSettings";
 import { useJery } from "./useJery";
 import { AppShell } from "./shell/AppShell";
@@ -53,6 +54,7 @@ export default function App() {
   return <AppShell jery={jery} expanded={expanded} onToggleChat={() => setExpanded(value => !value)}
     onToday={() => { setExpanded(true); void jery.sendText(TODAY_PROMPT); }}
     sidebar={<Sidebar subjects={subjects} state={snapshot.state} today={snapshot.today} active={screen} connected={jery.running} footer={<>
+      <RequestsInbox />
       <button aria-label="Настройки" aria-expanded={settings} onClick={() => setSettings(value => !value)}>◐</button>
       {settings && <VaultSettings onClose={() => setSettings(false)} />}
     </>} />}>

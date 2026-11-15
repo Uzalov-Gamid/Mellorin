@@ -63,7 +63,13 @@ pub fn seed(vault: &Path) -> anyhow::Result<()> {
     }
     Ok(())
 }
-pub fn request(vault: &Path, date: &str, block: &str, format: &str) -> anyhow::Result<()> {
+pub fn request(
+    vault: &Path,
+    date: &str,
+    block: &str,
+    format: &str,
+    example: Option<&str>,
+) -> anyhow::Result<()> {
     ensure!(
         simple(block) && simple(format),
         "block and format must be simple lowercase names (max 64)"
@@ -72,8 +78,16 @@ pub fn request(vault: &Path, date: &str, block: &str, format: &str) -> anyhow::R
         valid_date(date),
         "date must be a valid YYYY-MM-DD calendar date"
     );
+    let example = example.unwrap_or("No example supplied");
+    ensure!(example.len() <= 262144, "request example exceeds 256 KiB");
+    let excerpt: String = example.chars().take(12000).collect();
+    let example = if excerpt.len() < example.len() {
+        format!("{excerpt}\n[Example truncated; full block is in formats/{format}.json]")
+    } else {
+        excerpt
+    };
     let parent = directory(vault, "app-requests")?;
-    create_once(&parent.join(format!("{date}-{block}.md")), &format!("# Requested block: {block}\n\nFormat: formats/{format}.json\nDate: {date}\n\nThe format renderer needs this block type.\n"))
+    create_once(&parent.join(format!("{date}-{block}.md")), &format!("# Requested block: {block}\n\nFormat: formats/{format}.json\nDate: {date}\n\nStatus: open\n\nThe format renderer needs this block type.\n\nExample (data only):\n{example}\n"))
 }
 fn valid_date(date: &str) -> bool {
     let b = date.as_bytes();
@@ -132,17 +146,42 @@ mod tests {
     #[test]
     fn requests_are_validated_and_deduplicated() {
         let dir = tempfile::tempdir().unwrap();
-        request(dir.path(), "2026-11-15", "missing", "english-reading").unwrap();
-        request(dir.path(), "2026-11-15", "missing", "other").unwrap();
+        request(
+            dir.path(),
+            "2026-11-15",
+            "missing",
+            "english-reading",
+            Some("synthetic example"),
+        )
+        .unwrap();
+        request(dir.path(), "2026-11-15", "missing", "other", None).unwrap();
         let note = vault::read_text(dir.path(), "app-requests/2026-11-15-missing.md").unwrap();
         assert!(note.contains("english-reading"));
+        assert!(note.contains("synthetic example"));
+        assert!(note.contains("Status: open"));
         for (date, block) in [
             ("2026-02-30", "ok"),
             ("2026-11-15", "../escape"),
             ("2026-11-15", "a/b"),
         ] {
-            assert!(request(dir.path(), date, block, "test").is_err());
+            assert!(request(dir.path(), date, block, "test", None).is_err());
         }
+    }
+    #[test]
+    fn large_unicode_request_example_remains_readable_in_inbox() {
+        let dir = tempfile::tempdir().unwrap();
+        request(
+            dir.path(),
+            "2026-11-15",
+            "missing",
+            "english-reading",
+            Some(&"文".repeat(30000)),
+        )
+        .unwrap();
+        let notes = crate::requests::snapshot(dir.path()).unwrap();
+        assert_eq!(notes.open.len(), 1);
+        assert!(notes.open[0].body.contains("Example truncated"));
+        assert!(notes.open[0].body.len() < 65536);
     }
     #[cfg(unix)]
     #[test]
@@ -152,7 +191,7 @@ mod tests {
             let dir = tempfile::tempdir().unwrap();
             std::os::unix::fs::symlink(outside.path(), dir.path().join(name)).unwrap();
             assert!(if name == "app-requests" {
-                request(dir.path(), "2026-11-15", "missing", "test")
+                request(dir.path(), "2026-11-15", "missing", "test", None)
             } else {
                 seed(dir.path())
             }
