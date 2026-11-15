@@ -55,7 +55,7 @@ export function WordPopup({ word, sentence, initialStatus = null, onSaved, onClo
   </span>;
 }
 
-export function TextViewer() {
+export function useReading() {
   const [text, setText] = useState("");
   const [editing, setEditing] = useState(true);
   const [unknown, setUnknown] = useState<string[]>([]);
@@ -75,6 +75,11 @@ export function TextViewer() {
     return () => { active = false; };
   }, [selected, text, phraseAttempt]);
   const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  return { text, setText, editing, setEditing, unknown, setUnknown, statuses, setStatuses, popup, setPopup, selected, setSelected, explanation, phraseError, setPhraseAttempt, sentences };
+}
+export type Reading = ReturnType<typeof useReading>;
+export function ReadingText(r: Reading, inlineWord = true) {
+  const { text, setText, editing, setEditing, unknown, setUnknown, statuses, setStatuses, popup, setPopup, selected, setSelected, sentences } = r;
   if (editing) return <div className="viewer">
     <div className="viewer-header"><span className="viewer-title">Чтение текста</span></div>
     <textarea className="viewer-input" aria-label="Текст для чтения" value={text} onChange={e => setText(e.target.value)} placeholder="Вставьте английский текст…" rows={12} />
@@ -97,19 +102,40 @@ export function TextViewer() {
         return <span className="word-wrap" key={id}>
           <button className={`word ${unknown.includes(token.toLowerCase()) ? "word-unknown" : popup === id ? "word-selected" : "word-normal"}`}
             onClick={event => { event.stopPropagation(); setPopup(popup === id ? null : id); }} aria-expanded={popup === id}>{token}</button>
-          {popup === id && <WordPopup key={id} word={token} sentence={sentence} initialStatus={statuses[token]} onClose={() => setPopup(null)} onSaved={status => {
+          {inlineWord && popup === id && <WordPopup key={id} word={token} sentence={sentence} initialStatus={statuses[token]} onClose={() => setPopup(null)} onSaved={status => {
             if (status) setStatuses(previous => ({ ...previous, [token]: status }));
             setUnknown(previous => status === "known" ? previous.filter(word => word !== token.toLowerCase()) : previous.includes(token.toLowerCase()) ? previous : [...previous, token.toLowerCase()]);
           }} />}
         </span>;
       })}</span><sup><button aria-label={`Разобрать предложение ${sentenceIndex + 1}`} aria-pressed={selected === sentenceIndex} onClick={() => setSelected(sentenceIndex)}>{sentenceIndex + 1}</button></sup>{" "}
     </span>)}</div>
-    {selected !== null && <section className="phrase-breakdown" aria-live="polite"><div className="caption">ПРЕДЛОЖЕНИЕ {selected + 1} · ФРАЗЫ</div>
-      {phraseError ? <div><p role="alert">{phraseError}</p><button className="btn-sm" onClick={() => setPhraseAttempt(value => value + 1)}>Повторить разбор</button></div> : explanation ? <div className="phrase-list">{explanation.phrases.map((phrase, index) => <div className="phrase" key={index}><div>{phrase.text}</div><div>{phrase.ru}</div></div>)}</div> : <p>Разбираем…</p>}
-    </section>}
     </article>
     {unknown.length > 0 && <div className="vocab-panel"><div className="vocab-title">Незнакомые слова</div><div className="vocab-list">
       {unknown.map(word => <span className="vocab-word" key={word}>{word}</span>)}
     </div></div>}
   </div>;
+}
+
+export function ReadingPhrases(r: Reading) {
+  const { selected, phraseError, explanation, setPhraseAttempt } = r;
+  return <>{selected !== null && <section className="phrase-breakdown" aria-live="polite"><div className="caption">ПРЕДЛОЖЕНИЕ {selected + 1} · ФРАЗЫ</div>
+      {phraseError ? <div><p role="alert">{phraseError}</p><button className="btn-sm" onClick={() => setPhraseAttempt(value => value + 1)}>Повторить разбор</button></div> : explanation ? <div className="phrase-list">{explanation.phrases.map((phrase, index) => <div className="phrase" key={index}><div>{phrase.text}</div><div>{phrase.ru}</div></div>)}</div> : <p>Разбираем…</p>}
+    </section>}</>;
+}
+export function ReadingWord(r: Reading) {
+  if (!r.popup) return null;
+  const [sentenceIndex, tokenIndex] = r.popup.split('-').map(Number);
+  const sentence = r.sentences[sentenceIndex];
+  const word = sentence?.match(/[\p{L}\p{N}]+(?:['’\-][\p{L}\p{N}]+)*|[^\p{L}\p{N}]+/gu)?.[tokenIndex];
+  if (!word) return null;
+  return <WordPopup key={r.popup} word={word} sentence={sentence} initialStatus={r.statuses[word]} onClose={() => r.setPopup(null)} onSaved={status => {
+    if (status) r.setStatuses(previous => ({ ...previous, [word]: status }));
+    r.setUnknown(previous => status === "known" ? previous.filter(item => item !== word.toLowerCase()) : previous.includes(word.toLowerCase()) ? previous : [...previous, word.toLowerCase()]);
+  }} />;
+}
+export function TextViewer() {
+  const r = useReading();
+  const text = ReadingText(r);
+  // Direct render functions preserve the standalone hook renderer and inline popup behavior.
+  return <>{text}{ReadingPhrases(r)}</>;
 }

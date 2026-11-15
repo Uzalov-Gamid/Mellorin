@@ -1,4 +1,5 @@
 mod config;
+mod formats;
 mod learning;
 mod subprocess;
 mod vault;
@@ -10,6 +11,28 @@ use tauri::{AppHandle, Emitter, State};
 
 pub struct AppState {
     pub subprocess: Arc<SubprocessManager>,
+}
+
+#[tauri::command]
+fn format_seed(app: AppHandle) -> Result<(), String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    formats::seed(std::path::Path::new(&config.vault_path)).map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn format_request_block(
+    app: AppHandle,
+    date: String,
+    block: String,
+    format: String,
+) -> Result<(), String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    formats::request(
+        std::path::Path::new(&config.vault_path),
+        &date,
+        &block,
+        &format,
+    )
+    .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -156,6 +179,8 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             config_get,
+            format_seed,
+            format_request_block,
             vault_subjects,
             vault_read_text,
             vault_list,

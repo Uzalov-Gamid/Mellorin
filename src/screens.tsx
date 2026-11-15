@@ -1,5 +1,5 @@
-import { TextViewer } from "./TextViewer";
-export const screens = [{ id: "english/reading", subject: "english", skill: "reading", component: TextViewer }];
+import { FormatScreen } from "./blocks/FormatScreen";
+export const screens = [{ id: "english/reading", subject: "english", skill: "reading", component: FormatScreen }];
 export type ScreenId = string;
 export function screenFromHash(hash: string): ScreenId {
   const id = hash.replace(/^#\/?/, "");

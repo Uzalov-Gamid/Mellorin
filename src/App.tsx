@@ -11,6 +11,7 @@ import { useVaultState, setTaskDone, type TodayTask } from "./learning";
 import { StateHome } from "./shell/StateHome";
 import { TODAY_PROMPT, REFRESH_PROMPT } from "./prompts";
 import "./app.css";
+import { JeryFormatContext } from "./blocks/FormatScreen";
 
 export default function App() {
   const jery = useJery();
@@ -61,7 +62,7 @@ export default function App() {
       {settings && <div className="settings-popover" role="dialog" aria-label="Настройки"><h2>Хранилище</h2><p>{vault}</p><button onClick={() => setSettings(false)}>Закрыть</button></div>}
     </>} />}>
     {taskError && <p role="alert">{taskError}</p>}
-    <ScreenPanels active={screen} />
+    <JeryFormatContext.Provider value={{ message: jery.messages.filter(message => message.role === "assistant").slice(-1)[0]?.text || "", data: null, intent: (intent, value) => { setExpanded(true); void jery.sendText(`${intent}\nДанные ответа: ${JSON.stringify(value)}`); } }}><ScreenPanels active={screen} /></JeryFormatContext.Provider>
     {screen === "home" && <StateHome snapshot={snapshot} subjects={subjects} busy={taskBusy || !jery.ready || jery.busy || jery.loading} onStart={startTask} onToggle={toggleTask} loading={loading} onRefresh={() => { setExpanded(true); void jery.sendText(REFRESH_PROMPT); }} />}
     {!Screen && screen !== "home" && <section className="empty-screen"><h1>{screen === "home" ? "Главная" : `${selected?.name || screen.split("/")[0]} › ${skill?.name || screen.split("/")[1]}`}</h1><p>Данных для этого экрана пока нет. Начни разговор с JERY.</p></section>}
   </AppShell>;
