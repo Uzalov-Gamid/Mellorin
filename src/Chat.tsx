@@ -1,132 +1,89 @@
 import { useEffect, useRef, useState } from "react";
-import { onExit, onOutput, sendMessage, startSubprocess, stopSubprocess } from "./subprocess";
+import { getStatus, onChatDelta, onChatDone, onChatError, onExit, sendMessage, startSubprocess, stopSubprocess } from "./subprocess";
 
 type Message = { role: "user" | "assistant"; text: string };
-
-declare const __VITE_CLAUDE_PATH__: string | undefined;
-const CLAUDE_PATH = (typeof __VITE_CLAUDE_PATH__ !== "undefined" && __VITE_CLAUDE_PATH__) || "claude";
 
 export function Chat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [running, setRunning] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const bufRef = useRef("");
+  const pending = useRef(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => { bottomRef.current?.scrollIntoView?.({ behavior: "smooth" }); }, [messages]);
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => {
-    let unlistenOutput: (() => void) | null = null;
-    let unlistenExit: (() => void) | null = null;
-
-    onOutput((line) => {
-      bufRef.current += (bufRef.current ? "\n" : "") + line;
-      setMessages((prev) => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant") {
-          return [...prev.slice(0, -1), { role: "assistant", text: bufRef.current }];
-        }
-        return [...prev, { role: "assistant", text: bufRef.current }];
-      });
-    }).then((fn) => { unlistenOutput = fn });
-
-    onExit(() => {
-      setRunning(false);
-      setLoading(false);
-      bufRef.current = "";
-    }).then((fn) => { unlistenExit = fn });
-
-    return () => {
-      unlistenOutput?.();
-      unlistenExit?.();
-    };
+    let disposed = false;
+    const cleanups: (() => void)[] = [];
+    const finish = () => { pending.current = false; setLoading(false); };
+    const subscriptions = [
+      onChatDelta(({ text }) => {
+        if (!pending.current) return;
+        setMessages(previous => {
+          const last = previous[previous.length - 1];
+          if (last?.role !== "assistant") return previous;
+          return [...previous.slice(0, -1), { ...last, text: last.text + text }];
+        });
+      }),
+      onChatDone(finish),
+      onChatError(({ message }) => { setError(message); finish(); }),
+      onExit(() => { setRunning(false); finish(); }),
+    ].map(subscription => subscription.then(unlisten => {
+      if (disposed) unlisten(); else cleanups.push(unlisten);
+    }));
+    Promise.all(subscriptions).then(async () => {
+      const status = await getStatus();
+      if (!disposed) { setRunning(status); setReady(true); }
+    }).catch((reason: unknown) => { if (!disposed) setError(String(reason)); });
+    return () => { disposed = true; cleanups.forEach(fn => fn()); };
   }, []);
 
-  async function connect() {
+  async function toggleConnection() {
+    setBusy(true);
     setError(null);
     try {
-      await startSubprocess(CLAUDE_PATH);
-      setRunning(true);
-    } catch (e) {
-      setError(String(e));
-    }
+      if (running) { await stopSubprocess(); pending.current = false; setLoading(false); }
+      else await startSubprocess();
+      setRunning(!running);
+    } catch (reason) { setError(String(reason)); }
+    finally { setBusy(false); }
   }
-
-  async function disconnect() {
-    await stopSubprocess();
-    setRunning(false);
-  }
-
   async function send() {
     const text = input.trim();
-    if (!text || loading) return;
-    setInput("");
-    bufRef.current = "";
-    setMessages((prev) => [...prev, { role: "user", text }]);
+    if (!text || !running || pending.current || busy) return;
+    pending.current = true;
     setLoading(true);
-    try {
-      await sendMessage(text);
-    } catch (e) {
-      setError(String(e));
-      setLoading(false);
-    }
+    setError(null);
+    setInput("");
+    setMessages(previous => [...previous, { role: "user", text }, { role: "assistant", text: "" }]);
+    try { await sendMessage(text); }
+    catch (reason) { setError(String(reason)); pending.current = false; setLoading(false); }
   }
-
-  function onKey(e: React.KeyboardEvent) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      send();
-    }
-  }
-
   return (
     <div className="chat">
       <div className="chat-header">
-        <span className="chat-title">JERY</span>
-        {!running ? (
-          <button className="btn-connect" onClick={connect}>connect</button>
-        ) : (
-          <button className="btn-disconnect" onClick={disconnect}>disconnect</button>
-        )}
-        {error && <span className="chat-error">{error}</span>}
+        <span className="chat-title">Джери</span>
+        <button className={running ? "btn-disconnect" : "btn-connect"} disabled={!ready || busy} onClick={toggleConnection}>
+          {busy ? "Подождите…" : running ? "Отключиться" : "Подключиться"}
+        </button>
       </div>
-
-      <div className="chat-messages">
-        {messages.length === 0 && (
-          <div className="chat-empty">
-            {running ? "Say something..." : "Connect to start a session"}
-          </div>
-        )}
-        {messages.map((m, i) => (
-          <div key={i} className={`msg msg-${m.role}`}>
-            <span className="msg-role">{m.role === "user" ? "you" : "jery"}</span>
-            <pre className="msg-text">{m.text}</pre>
-          </div>
-        ))}
+      {error && <div className="chat-error" role="alert">Ошибка: {error}</div>}
+      <div className="chat-messages" aria-live="polite">
+        {messages.length === 0 && <div className="chat-empty">{running ? "Напишите сообщение…" : "Подключитесь, чтобы начать диалог"}</div>}
+        {messages.map((message, index) => <div key={index} className={`msg msg-${message.role}`}>
+          <span className="msg-role">{message.role === "user" ? "Вы" : "Джери"}</span>
+          <pre className="msg-text">{message.text || (loading ? "Джери отвечает…" : "Ответ не получен")}</pre>
+        </div>)}
         <div ref={bottomRef} />
       </div>
-
       <div className="chat-input-row">
-        <textarea
-          className="chat-input"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={onKey}
-          placeholder={running ? "Message... (Enter to send)" : "Connect first"}
-          disabled={!running || loading}
-          rows={3}
-        />
-        <button
-          className="btn-send"
-          onClick={send}
-          disabled={!running || loading || !input.trim()}
-        >
-          {loading ? "…" : "→"}
-        </button>
+        <textarea className="chat-input" aria-label="Сообщение" value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }}
+          placeholder={running ? "Сообщение… (Enter — отправить)" : "Сначала подключитесь"} disabled={!running || loading || busy} rows={3} />
+        <button className="btn-send" aria-label="Отправить" onClick={send} disabled={!running || loading || busy || !input.trim()}>{loading ? "…" : "→"}</button>
       </div>
     </div>
   );
