@@ -48,3 +48,11 @@ The app polls `.mellorin/state.json` and `.mellorin/today.json` every five secon
 `vault_read_text` and `vault_list` accept relative paths, reject traversal and canonical paths leaving the configured vault, and enforce file/directory limits (2 MiB text, 10,000 entries). External symlinks are rejected. These reads do not parse arbitrary prose into progress figures. The standard canonical-path checks assume the local vault is not being adversarially rewritten during a read.
 
 Home task completion uses a dedicated `today_set_done` command after a user click. It patches one task in today's validated file, rejects stale dates/missing ids and replaces the file atomically, preserving permissions and other tasks. This deliberately avoids requiring CLI write permissions for a local checkbox; JERY still refreshes the broader state on request. UI confirmation follows the next file poll.
+
+## Data-only lesson formats (Stage 7)
+
+`FormatScreen` polls `formats/<subject>-<skill>.json` every five seconds through `vault_read_text`. The bounded v1 validator and block prop contract are documented in [formats.md](formats.md). Layout updates preserve the shared reading hook and stable block keys. English Reading composes independent `text`, `phrase-breakdown`, and `word-card` blocks around that hook; the standalone `TextViewer` uses the same render parts and still supports inline word popups. The mounted screen panel retains reading state across navigation.
+
+`BlockContext` carries shared reading state, the current JERY message/data, and an explicit user-triggered intent callback. Format strings are escaped React text. Audio accepts only absolute HTTP(S). Code/query fields never execute. `writeBack` sends an intent and answer data to the existing JERY conversation only after a button click; it has no path or generic write command.
+
+Two narrowly scoped Rust commands seed the fixed bundled English format and create deduplicated missing-block notes. Canonical inside-vault directory checks and create-new semantics prevent external symlink writes and replacement of existing files. Seed also appends the format contract once to the vault's `.mellorin/README.md`, preserving previous instructions. Errors stay visible while the last valid/bundled reading format remains usable. Request badges, chat block protocol, apply and rollback remain future stages.

@@ -287,9 +287,9 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 .phrase-list { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
 .phrase { border-left: 3px solid var(--brass); padding: 0 12px 0 10px; }
 .phrase > div + div { color: var(--tan); font-size: 12px; }
-.reading-paper .word-popup { width: 300px; border-radius: 12px; padding: 16px 18px; gap: 10px; box-shadow: 0 8px 28px rgba(28,21,19,.28); }
-.reading-paper .word-popup-word { font-size: 18px; color: var(--cream); }
-.reading-paper .word-popup-btn { font-size: 12px; padding: 5px 10px; border-radius: 8px; }
+.reading-paper .word-popup, .format-block > .word-popup { width: 300px; border-radius: 12px; padding: 16px 18px; gap: 10px; box-shadow: 0 8px 28px rgba(28,21,19,.28); }
+.reading-paper .word-popup-word, .format-block > .word-popup .word-popup-word { font-size: 18px; color: var(--cream); }
+.reading-paper .word-popup-btn, .format-block > .word-popup .word-popup-btn { font-size: 12px; padding: 5px 10px; border-radius: 8px; }
 .word-statuses { display: flex; flex-wrap: wrap; gap: 6px; }
 .word-statuses [aria-pressed="true"] { border-color: var(--flame); color: var(--flame); }
 .word-saved { color: var(--mint); font-size: 12px; }
@@ -346,3 +346,10 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 @media (max-width: 1250px) { .home-subjects { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (max-width: 1000px) { .home-secondary { grid-template-columns: 1fr; } .home-primary { grid-template-columns: 1fr; } }
 @media (max-width: 700px) { .home-subjects { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.format-block { margin-bottom: var(--space-4); }
+.format-block > .word-popup { position: static; display: flex; max-width: 100%; box-sizing: border-box; }
+.format-block fieldset { border: 1px solid var(--sand); border-radius: var(--radius-card); padding: var(--space-4); }
+.format-block fieldset label { display: block; margin: var(--space-2) 0; }
+.format-block textarea { display: block; width: 100%; min-height: 120px; box-sizing: border-box; background: var(--paper); color: var(--ink); border: 1px solid var(--sand); border-radius: var(--radius); padding: var(--space-3); font: inherit; }
+.format-block pre { white-space: pre-wrap; overflow-wrap: anywhere; }
