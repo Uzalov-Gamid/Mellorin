@@ -57,8 +57,25 @@ pub fn seed(vault: &Path) -> anyhow::Result<()> {
         &formats.join("english-listening.json"),
         include_str!("../../formats/english-listening.json"),
     )?;
+    create_once(
+        &formats.join("english-writing.json"),
+        include_str!("../../formats/english-writing.json"),
+    )?;
     let parent = directory(vault, ".mellorin")?;
     let readme = parent.join("README.md");
+    // Writing's app-only contract migrates independently of the older format marker.
+    create_once(&readme, "")?;
+    let writing_old = vault::read_text(vault, ".mellorin/README.md")?;
+    if !writing_old.contains("# English Writing v1") {
+        let target = vault::resolve_inside(vault, ".mellorin/README.md")?;
+        let mut file = std::fs::OpenOptions::new().append(true).open(target)?;
+        write!(
+            file,
+            "\n\n{}",
+            include_str!("../../docs/english-writing.md")
+        )?;
+        file.sync_all()?;
+    }
     const MARKER: &str = "# Mellorin format v1";
     let exists = readme.symlink_metadata().is_ok();
     if exists {
@@ -136,6 +153,41 @@ fn valid_date(date: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn writing_seed_migrates_contract_without_touching_process_or_custom_format() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir_all(dir.path().join(".mellorin")).unwrap();
+        std::fs::create_dir_all(dir.path().join("Learning/English/writing")).unwrap();
+        let process = dir.path().join("Learning/English/writing/process.md");
+        std::fs::write(&process, "Synthetic process: keep exact bytes.\n").unwrap();
+        std::fs::write(
+            dir.path().join(".mellorin/README.md"),
+            "Existing instructions\n# Mellorin format v1",
+        )
+        .unwrap();
+        seed(dir.path()).unwrap();
+        assert!(vault::read_text(dir.path(), "formats/english-writing.json")
+            .unwrap()
+            .contains("writing-study"));
+        std::fs::write(
+            dir.path().join("formats/english-writing.json"),
+            "custom writing",
+        )
+        .unwrap();
+        seed(dir.path()).unwrap();
+        let readme = vault::read_text(dir.path(), ".mellorin/README.md").unwrap();
+        assert!(readme.starts_with("Existing instructions\n# Mellorin format v1"));
+        assert_eq!(readme.matches("# English Writing v1").count(), 1);
+        assert_eq!(
+            std::fs::read_to_string(process).unwrap(),
+            "Synthetic process: keep exact bytes.\n"
+        );
+        assert_eq!(
+            vault::read_text(dir.path(), "formats/english-writing.json").unwrap(),
+            "custom writing"
+        );
+    }
+
     #[test]
     fn fixed_seed_preserves_existing_format_and_instructions() {
         let dir = tempfile::tempdir().unwrap();

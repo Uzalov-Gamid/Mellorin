@@ -62,7 +62,6 @@ export default function App() {
   const skill = selected?.skills.find(item => item.id === screen.split("/")[1]);
   return <AppShell jery={jery} expanded={expanded} onToggleChat={() => setExpanded(value => !value)}
     active={settings ? "settings" : screen} onToday={() => { setExpanded(true); void jery.sendText(REFRESH_PROMPT); }}
-    onNewText={() => { setExpanded(true); void jery.sendText("Хочу новый текст для чтения. Уточни источник и предложи текст перед сохранением."); }}
     sidebar={<Sidebar subjects={subjects} state={snapshot.state} today={snapshot.today} active={settings ? "settings" : screen} connected={jery.running} onNewSubject={() => { setExpanded(true); void jery.sendText("Хочу добавить предмет. Уточни название и предложи структуру перед созданием."); }} footer={<>
       <RequestsInbox />
       <button aria-label="Настройки" aria-expanded={settings} onClick={() => setSettings(value => !value)}>≡</button>

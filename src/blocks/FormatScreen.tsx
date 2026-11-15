@@ -1,3 +1,4 @@
+import writingBuiltin from '../../formats/english-writing.json';
 import listeningBuiltin from '../../formats/english-listening.json';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -13,7 +14,7 @@ export const JeryFormatContext = createContext<{ canSend?: boolean; intentError?
 export function FormatScreen({ subject = 'english', skill = 'reading' }: { subject?: string; skill?: string }) {
   const reading = useReading();
   const jery = useContext(JeryFormatContext);
-  const [format, setFormat] = useState<Format>(subject === 'english' && skill === 'reading' ? builtin as Format : subject === 'english' && skill === 'words' ? wordsBuiltin as Format : subject === 'english' && skill === 'listening' ? listeningBuiltin as Format : { version: 1, steps: [] });
+  const [format, setFormat] = useState<Format>(subject === 'english' && skill === 'writing' ? writingBuiltin as Format : subject === 'english' && skill === 'reading' ? builtin as Format : subject === 'english' && skill === 'words' ? wordsBuiltin as Format : subject === 'english' && skill === 'listening' ? listeningBuiltin as Format : { version: 1, steps: [] });
   const [error, setError] = useState('');
   const [requestError, setRequestError] = useState('');
   const requested = useRef(new Set<string>());
@@ -32,7 +33,7 @@ export function FormatScreen({ subject = 'english', skill = 'reading' }: { subje
       finally { pending = false; }
     }
     void (async () => {
-      if (subject === 'english' && (skill === 'reading' || skill === 'words' || skill === 'listening')) {
+      if (subject === 'english' && (skill === 'reading' || skill === 'words' || skill === 'listening' || skill === 'writing')) {
         try { await invoke('format_seed'); } catch (reason) { seedError = `Не удалось подготовить формат: ${String(reason)}.`; }
       }
       if (active) await refresh();
