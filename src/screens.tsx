@@ -1,5 +1,5 @@
 import { FormatScreen } from "./blocks/FormatScreen";
-export const screens = [{ id: "english/writing", subject: "english", skill: "writing", component: FormatScreen }, { id: "english/listening", subject: "english", skill: "listening", component: FormatScreen }, { id: "english/reading", subject: "english", skill: "reading", component: FormatScreen }, { id: "english/words", subject: "english", skill: "words", component: FormatScreen }];
+export const screens = [{ id: "english/grammar", subject: "english", skill: "grammar", component: FormatScreen }, { id: "english/writing", subject: "english", skill: "writing", component: FormatScreen }, { id: "english/listening", subject: "english", skill: "listening", component: FormatScreen }, { id: "english/reading", subject: "english", skill: "reading", component: FormatScreen }, { id: "english/words", subject: "english", skill: "words", component: FormatScreen }];
 export type ScreenId = string;
 export function screenFromHash(hash: string): ScreenId {
   const id = hash.replace(/^#\/?/, "");

@@ -8,6 +8,8 @@ import {spawn} from 'node:child_process';
 import {renderMockup} from './qa/mockup.mjs';
 import {audit} from './qa/audit.mjs';
 import {verifyWritingFlow} from './qa/writing-flow.mjs';
+import {grammarLesson} from './qa/grammar-fixture.mjs';
+import {verifyGrammarFlow} from './qa/grammar-flow.mjs';
 import {writingLesson} from './qa/writing-fixture.mjs';
 import {snapshot,reading,wordLesson,listeningLesson} from './qa/fixture.mjs';
 const args=process.argv.slice(2);
@@ -21,7 +23,7 @@ const widths=option('--widths','1100,1440,1680').split(',').map(Number);
 if(widths.some(n=>!Number.isInteger(n)||n<800||n>4000))throw Error('Widths must be integers from 800 to 4000');
 const names=(await readdir(mockups)).filter(n=>n.endsWith('.dc.html'));
 const sources=Object.fromEntries(await Promise.all(names.map(async n=>[n.replace('.dc.html',''),await readFile(join(mockups,n),'utf8')])));
-const routes={Writing:'english/writing',Home:'home',Main:'english/reading',ReadingCollapsed:'english/reading',Words:'english/words',Listening:'english/listening',Settings:'home'};
+const routes={Grammar:'english/grammar',Writing:'english/writing',Home:'home',Main:'english/reading',ReadingCollapsed:'english/reading',Words:'english/words',Listening:'english/listening',Settings:'home'};
 const seedFormats=Object.fromEntries(await Promise.all((await readdir('formats')).filter(n=>n.endsWith('.json')).map(async n=>['formats/'+n,await readFile(join('formats',n),'utf8')])));
 const selected=option('--screen','').split(',').filter(Boolean);
 for(const name of selected)if(!sources[name])throw Error(`Unknown mockup ${name}`);
@@ -54,9 +56,13 @@ try {
         const response=await route.fetch();
         const html=(await response.text()).replace('<script type="module" src="/src/main.tsx"></script>',`<script type="module">
           import {mockIPC} from '/node_modules/@tauri-apps/api/mocks.js';
+          import {emit} from '/node_modules/@tauri-apps/api/event.js';
           const snapshot=${JSON.stringify(snapshot)};
-          const files=${JSON.stringify({...seedFormats,'.mellorin/english-writing.json':JSON.stringify(writingLesson),'.mellorin/english-words.json':JSON.stringify(wordLesson),'.mellorin/english-listening.json':JSON.stringify(listeningLesson),'Learning/English/listening/2026-11-15-qa.md':'---\npractice: true\n---\n# A quiet morning'})};
+          const files=${JSON.stringify({...seedFormats,'.mellorin/english-grammar.json':JSON.stringify(grammarLesson),'Learning/English/grammar/notes/topic-14-past-simple-regular.md':'# Synthetic grammar note','.mellorin/english-writing.json':JSON.stringify(writingLesson),'.mellorin/english-words.json':JSON.stringify(wordLesson),'.mellorin/english-listening.json':JSON.stringify(listeningLesson),'Learning/English/listening/2026-11-15-qa.md':'---\npractice: true\n---\n# A quiet morning'})};
+          window.__grammarQA={files,intents:[]};
           mockIPC(async(cmd,args)=>{
+            if(cmd==='subprocess_start' && ${JSON.stringify(name)}==='Grammar')return;
+            if(cmd==='subprocess_send' && ${JSON.stringify(name)}==='Grammar'){window.__grammarQA.intents.push(args.message);await emit('chat-done',{});return;}
             if(cmd==='config_get')return {vault_path:'/synthetic/qa-vault',claude_path:'synthetic',theme:'light',jery_can_edit_vault:true,jery_ticktick:'full'};
             if(cmd==='learning_snapshot')return snapshot;
             if(cmd==='vault_subjects')return snapshot.state.subjects.map(s=>({name:({english:'English',devops:'DevOps',arabic:'Arabic',c:'C',sql:'SQL'})[s.id],skills:s.trail.map(t=>t.id)}));
@@ -78,6 +84,7 @@ try {
       await page.goto(`${url}/#${routes[name]}`);
       await page.getByRole('textbox',{name:'Ответ JERY',exact:true}).waitFor();
       if(['Main','ReadingCollapsed'].includes(name)) {await page.getByRole('textbox',{name:'Текст для чтения',exact:true}).fill(reading);await page.getByRole('button',{name:'Читать →',exact:true}).click();}
+      if(name==='Grammar')await page.locator('.grammar-theory h2').waitFor();
       if(name==='Writing')await page.getByLabel('Текст с отмеченными ошибками',{exact:true}).waitFor();
       if(name==='Settings')await page.getByRole('button',{name:'Настройки',exact:true}).click();
       await page.evaluate(()=>document.fonts.ready);
@@ -88,8 +95,9 @@ try {
       const side=new PNG({width:width*2,height:900});PNG.bitblt(a,side,0,0,width,900,0,0);PNG.bitblt(b,side,0,0,width,900,width,0);
       await writeFile(join(out,`${key}-side-by-side.png`),PNG.sync.write(side));
       const findings=await page.evaluate(audit);
+      const grammarFlow = name === 'Grammar' ? await verifyGrammarFlow(page) : undefined;
       const writingFlow = name === 'Writing' ? await verifyWritingFlow(page) : undefined;
-      report.screens.push({name,width,collapsed,differentPixels:pixels,differencePercent:100*pixels/(width*900),findings,errors,...(writingFlow ? {writingFlow} : {})});
+      report.screens.push({name,width,collapsed,differentPixels:pixels,differencePercent:100*pixels/(width*900),findings,errors,...(grammarFlow ? {grammarFlow} : {}),...(writingFlow ? {writingFlow} : {})});
       await context.close();
     }
   }

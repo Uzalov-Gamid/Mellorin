@@ -1,0 +1,47 @@
+// Browser-only regression. Synthetic file replacement; no model or live vault.
+export async function verifyGrammarFlow(page) {
+  const results=[];
+  const study=page.getByRole('region',{name:'English Grammar',exact:true});
+  await study.getByRole('button',{name:'Часть 3 ›',exact:true}).click();
+  await study.getByRole('button',{name:'Часть 4 ›',exact:true}).click();
+  if(!await study.getByRole('button',{name:'Часть 4 ›',exact:true}).isDisabled())throw Error('Final theory part permits overflow');
+  await page.evaluate(()=>{location.hash='english/words';});
+  await page.getByRole('region',{name:'English Words',exact:true}).waitFor();
+  await page.evaluate(()=>{location.hash='english/grammar';});
+  await study.getByText('часть 4: синтетическая проверка навигации',{exact:true}).waitFor();
+  await study.getByRole('button',{name:'‹ Часть 3',exact:true}).click();
+  await study.getByRole('button',{name:'‹ Часть 2',exact:true}).click();
+  await study.getByRole('button',{name:'‹ Часть 1',exact:true}).click();
+  if(!await study.getByRole('button',{name:'‹ Часть 1',exact:true}).isDisabled())throw Error('First theory part permits underflow');
+  results.push('one theory part; both boundaries; mounted navigation retained');
+  await study.getByRole('button',{name:'played',exact:true}).click();
+  if(await study.locator('.grammar-correct,.grammar-wrong').count())throw Error('Graded before submission');
+  await study.getByText('Источники и загрузка урока',{exact:true}).click();
+  const reload=study.getByRole('button',{name:'Загрузить урок',exact:true});
+  await page.evaluate(()=>{window.__grammarQA.saved=window.__grammarQA.files['.mellorin/english-grammar.json'];window.__grammarQA.files['.mellorin/english-grammar.json']='{broken';});
+  await reload.click();
+  await study.getByRole('alert').filter({hasText:'Последний корректный урок сохранён'}).waitFor();
+  if(await study.getByRole('button',{name:'played',exact:true}).getAttribute('aria-pressed')!=='true')throw Error('Malformed reload lost answer');
+  await study.getByText('часть 1: синтетическая проверка навигации',{exact:true}).waitFor();
+  results.push('malformed reload preserves lesson, selected answer and viewed part');
+  await page.evaluate(()=>{const v=JSON.parse(window.__grammarQA.saved);v.practice.id='new-practice';v.note.status='ready';window.__grammarQA.files['.mellorin/english-grammar.json']=JSON.stringify(v);});
+  await reload.click();
+  await study.getByRole('button',{name:'Открыть конспект ›',exact:true}).waitFor();
+  if(await study.getByRole('button',{name:'played',exact:true}).getAttribute('aria-pressed')!=='false')throw Error('Stale answer survived new practice');
+  await study.getByRole('button',{name:'Открыть конспект ›',exact:true}).click();
+  await study.getByRole('dialog',{name:'Конспект грамматики',exact:true}).getByText('# Synthetic grammar note',{exact:true}).waitFor();
+  await study.getByRole('button',{name:'Закрыть конспект',exact:true}).click();
+  results.push('successful reload clears stale selection; bounded note opens and closes');
+  if(await page.evaluate(()=>window.__grammarQA.intents.length)!==0)throw Error('Navigation or file loading sent a message');
+  await study.getByRole('button',{name:'played',exact:true}).click();
+  await study.getByRole('button',{name:'Ответить JERY',exact:true}).click();
+  await study.locator('.grammar-correct').waitFor();
+  await page.waitForFunction(()=>window.__grammarQA.intents.length===1);
+  const answer=await page.evaluate(()=>JSON.parse(window.__grammarQA.intents[0].split('Данные ответа: ')[1]));
+  if(answer.practice!=='new-practice'||answer.answer!=='played')throw Error('Wrong explicit answer payload');
+  await study.getByRole('button',{name:'Попросить проверку: стр. 87, упр. 4–5',exact:true}).click();
+  await page.waitForFunction(()=>window.__grammarQA.intents.length===2);
+  await study.getByText('○ жду «готово»',{exact:true}).waitFor();
+  results.push('only explicit answer/homework clicks send captured intents; checked status is never fabricated');
+  return results;
+}
