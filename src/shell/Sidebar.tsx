@@ -6,9 +6,9 @@ import { Ring } from "../ui";
 import { trailState } from "./trail";
 
 function storedCollapsed() { try { return localStorage.getItem("sidebar_collapsed") === "true"; } catch { return false; } }
-export function Sidebar({ subjects, state, today, active, connected, footer }: { subjects: Subject[]; state?: LearningState | null; today?: TodayState | null; active: string; connected: boolean; footer: ReactNode }) {
+export function Sidebar({ subjects, state, today, active, connected, footer, onNewSubject }: { subjects: Subject[]; state?: LearningState | null; today?: TodayState | null; active: string; connected: boolean; footer: ReactNode; onNewSubject?: () => void }) {
   const [collapsed, setCollapsed] = useState(() => storedCollapsed() || window.matchMedia("(max-width: 999px)").matches);
-  const [open, setOpen] = useState(active.includes("/") ? active.split("/")[0] : subjects[0]?.id);
+  const [open, setOpen] = useState(active.includes("/") ? active.split("/")[0] : undefined);
   function changeCollapsed(value: boolean) {
     setCollapsed(value);
     try { localStorage.setItem("sidebar_collapsed", String(value)); } catch { /* storage can be disabled */ }
@@ -25,10 +25,11 @@ export function Sidebar({ subjects, state, today, active, connected, footer }: {
     media.addEventListener("change", resize); window.addEventListener("keydown", keys);
     return () => { media.removeEventListener("change", resize); window.removeEventListener("keydown", keys); };
   }, []);
-  useEffect(() => { if (active.includes("/")) setOpen(active.split("/")[0]); }, [active]);
+  useEffect(() => { setOpen(active.includes("/") ? active.split("/")[0] : undefined); }, [active]);
   const tasks = dayTasks(today), week = weekActivity(state);
   const done = tasks?.filter(task => task.done).length ?? 0;
   return <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`} aria-label="Предметы">
+    <div className="sidebar-window-reserve" data-tauri-drag-region aria-hidden="true" />
     <div className="sidebar-top"><a href="#home" aria-label={`Главная: ${tasks ? `${done}/${tasks.length} задач` : "данных задач нет"}`} className={`day-home ${active === "home" ? "day-home-active" : ""}`}><Ring size={collapsed ? 40 : 44} value={done} total={tasks?.length ?? 0} label="Задачи сегодня">{tasks ? `${done}/${tasks.length}` : "—"}</Ring></a>
       {!collapsed && <span className="week-dots" aria-label="Занятия за неделю">{week.map(day => <span key={day.date} title={`${day.date}: ${day.count ?? "нет данных"}`} className={`${day.today ? "week-dot-today" : ""} ${day.count ? "week-dot-done" : ""}`} />)}</span>}
       <button aria-label={collapsed ? "Развернуть панель" : "Свернуть панель"} onClick={() => changeCollapsed(!collapsed)}>{collapsed ? "»" : "«"}</button></div>
@@ -45,7 +46,7 @@ export function Sidebar({ subjects, state, today, active, connected, footer }: {
             <span className="trail-node" />{!collapsed && <><span>{skill.name}</span><small>{trail.nodes[index] === "current" ? "сейчас" : progress?.trail.find(item => item.id === skill.id)?.text || (trail.nodes[index] === "passed" ? "✓" : "—")}</small></>}</a>)}
         </div>}
       </div>;
-    })}</nav>
+    })}<button className="sidebar-add" aria-label="Добавить предмет" onClick={onNewSubject}><span>+</span>{!collapsed && "Предмет"}</button></nav>
     <footer><span className="caption" title={connected ? "JERY на связи" : "JERY отключён"}>{collapsed ? (connected ? "●" : "○") : connected ? "● JERY на связи" : "○ JERY"}</span>{footer}</footer>
   </aside>;
 }

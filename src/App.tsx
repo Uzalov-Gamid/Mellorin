@@ -12,7 +12,7 @@ import { screens, ScreenPanels, screenFromHash, type ScreenId } from "./screens"
 import { localDate } from "./homeData";
 import { useVaultState, setTaskDone, type TodayTask } from "./learning";
 import { StateHome } from "./shell/StateHome";
-import { TODAY_PROMPT, REFRESH_PROMPT } from "./prompts";
+import { REFRESH_PROMPT } from "./prompts";
 import "./app.css";
 import { JeryFormatContext } from "./blocks/FormatScreen";
 
@@ -26,9 +26,11 @@ export default function App() {
   const [taskError, setTaskError] = useState<string | null>(null);
   const [settings, setSettings] = useState(false);
   useEffect(() => {
+    const shortcuts = (event: KeyboardEvent) => { if ((event.metaKey || event.ctrlKey) && event.key === ",") { event.preventDefault(); setSettings(value => !value); } };
+    window.addEventListener("keydown", shortcuts);
     const changed = () => setScreen(screenFromHash(window.location.hash));
     window.addEventListener("hashchange", changed);
-    return () => window.removeEventListener("hashchange", changed);
+    return () => { window.removeEventListener("hashchange", changed); window.removeEventListener("keydown", shortcuts); };
   }, []);
   useEffect(() => {
     let active = true;
@@ -52,10 +54,12 @@ export default function App() {
   const selected = subjects.find(subject => subject.id === screen.split("/")[0]);
   const skill = selected?.skills.find(item => item.id === screen.split("/")[1]);
   return <AppShell jery={jery} expanded={expanded} onToggleChat={() => setExpanded(value => !value)}
-    onToday={() => { setExpanded(true); void jery.sendText(TODAY_PROMPT); }}
-    sidebar={<Sidebar subjects={subjects} state={snapshot.state} today={snapshot.today} active={screen} connected={jery.running} footer={<>
+    active={screen} onToday={() => { setExpanded(true); void jery.sendText(REFRESH_PROMPT); }}
+    onNewText={() => { setExpanded(true); void jery.sendText("Хочу новый текст для чтения. Уточни источник и предложи текст перед сохранением."); }}
+    sidebar={<Sidebar subjects={subjects} state={snapshot.state} today={snapshot.today} active={screen} connected={jery.running} onNewSubject={() => { setExpanded(true); void jery.sendText("Хочу добавить предмет. Уточни название и предложи структуру перед созданием."); }} footer={<>
       <RequestsInbox />
-      <button aria-label="Настройки" aria-expanded={settings} onClick={() => setSettings(value => !value)}>◐</button>
+      <button aria-label="Настройки" aria-expanded={settings} onClick={() => setSettings(value => !value)}>≡</button>
+      <button aria-label="Тема" onClick={() => window.dispatchEvent(new CustomEvent("mellorin:theme-request"))}>◐</button>
       {settings && <VaultSettings onClose={() => setSettings(false)} />}
     </>} />}>
     <JeryBlocks jery={jery} />
