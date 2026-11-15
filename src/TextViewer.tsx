@@ -8,6 +8,7 @@ export function WordPopup({ word, sentence, initialStatus = null, onSaved, onClo
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<VocabStatus | null>(initialStatus);
+  const [savedPath, setSavedPath] = useState("vocabulary/mywords-list.md");
   const [speechError, setSpeechError] = useState("");
   const active = useRef(false);
   useEffect(() => {
@@ -24,7 +25,8 @@ export function WordPopup({ word, sentence, initialStatus = null, onSaved, onClo
     setSaving(true);
     setError(null);
     try {
-      await vocabAdd(word, sentence);
+      const path = await vocabAdd(word, sentence);
+      if (active.current && path) setSavedPath(path);
       if (next !== "learning") await vocabSetStatus(word, next);
       if (active.current) { setStatus(next); onSaved(next); }
     }
@@ -50,7 +52,7 @@ export function WordPopup({ word, sentence, initialStatus = null, onSaved, onClo
     <button className="word-popup-btn" onClick={speak}>▸ Послушать произношение</button>
     {speechError && <span role="status">{speechError}</span>}
     <span className="word-statuses">{(["learning", "focus", "known"] as const).map(value => <button key={value} className="word-popup-btn" aria-pressed={status === value} disabled={saving} onClick={() => markUnknown(value)}>{value}</button>)}</span>
-    {status && <span className="word-saved" role="status">добавлено в vocabulary/mywords-list.md · {status}</span>}
+    {status && <span className="word-saved" role="status">добавлено в {savedPath} · {status}</span>}
     <button className="word-popup-btn" onClick={onClose}>Закрыть</button>
   </span>;
 }
