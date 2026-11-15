@@ -53,6 +53,6 @@ export function FormatScreen({ subject = 'english', skill = 'reading' }: { subje
   }, [format, path, subject, skill]);
   return <BlockContext.Provider value={{ ...jery, reading }}><section aria-label="Формат урока">
     {error && <p role="alert">{error}</p>}{requestError && <p role="alert">{requestError}</p>}
-    {format.steps.map(step => <section key={step.id} aria-label={step.title}>{format.steps.length > 1 && <h2>{step.title}</h2>}{step.blocks.map((block, i) => <BlockView key={`${i}:${block.type}`} block={block} />)}</section>)}
+    {format.steps.map(step => <section key={step.id} aria-label={step.title}>{format.steps.length > 1 && <h2>{step.title}</h2>}{step.blocks.map((block, i) => <BlockView key={`${i}:${JSON.stringify(block)}`} block={block} />)}</section>)}
   </section></BlockContext.Provider>;
 }
