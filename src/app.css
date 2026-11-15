@@ -45,7 +45,7 @@ body {
 .main { flex: 1; overflow: hidden; display: flex; flex-direction: column }
 
 /* ── Chat ── */
-.chat { display: flex; flex-direction: column; height: 100%; padding: 0 }
+.chat { position: relative; display: flex; flex-direction: column; height: 100%; padding: 0 }
 
 .chat-header {
   display: flex; align-items: center; gap: 10px;
@@ -62,7 +62,7 @@ body {
 }
 .chat-empty { color: var(--fgM); font-size: 13px; text-align: center; margin-top: 40px }
 
-.msg { display: flex; flex-direction: column; gap: 4px; max-width: 680px }
+.msg { display: flex; flex-direction: column; gap: 4px; max-width: min(820px, 92%) }
 .msg-user     { align-self: flex-end }
 .msg-assistant{ align-self: flex-start }
 .msg-role     { font-size: 10px; font-weight: var(--fw-strong); text-transform: uppercase; letter-spacing: .07em; color: var(--fgM) }
@@ -72,6 +72,15 @@ body {
   background: var(--bg2); border: 1px solid var(--bd);
   border-radius: var(--r); padding: 10px 13px; font-size: 13px; line-height: 1.6;
 }
+.msg-md { white-space: normal; font-size: 14px; line-height: 1.7 }
+.msg-md > :first-child { margin-top: 0 } .msg-md > :last-child { margin-bottom: 0 }
+.msg-md p, .msg-md ul, .msg-md ol { margin: 0 0 .7em }
+.msg-md h1, .msg-md h2, .msg-md h3 { font-size: 14px; margin: 1em 0 .4em }
+.msg-md code { background: var(--linen); padding: 1px 4px; border-radius: 4px }
+.msg-md pre { overflow-x: auto; background: var(--linen); padding: 8px 10px; border-radius: 6px }
+.msg-md table { border-collapse: collapse; margin: .5em 0; display: block; overflow-x: auto }
+.msg-md th, .msg-md td { border: 1px solid var(--sand); padding: 3px 8px; text-align: left }
+.chat-jump { position: absolute; right: 24px; bottom: 12px; border: 1px solid var(--ember); background: var(--paper); color: var(--ember); border-radius: 999px; padding: 4px 12px; font: inherit; cursor: pointer; z-index: 3 }
 .msg-user .msg-text  { background: var(--acL); border-color: var(--ac) }
 
 .chat-input-row {
@@ -215,7 +224,9 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 .jery-entry { display: flex; flex: 0 1 340px; min-width: 150px; border: 1px solid var(--dune); border-radius: 10px; padding: 7px 12px; }
 .jery-entry input { width: 100%; min-width: 0; border: 0; background: transparent; font: inherit; color: var(--ink); outline: none; }
 .jery-strip button, .jery-panel-heading button, .shell-placeholder footer > button { border: 0; background: transparent; color: var(--ember); cursor: pointer; font: inherit; }
-.jery-expanded { height: min(42vh, 360px); flex-shrink: 0; border-top: 1px solid var(--sand); }
+.jery-expanded { position: relative; height: min(52vh, 420px); flex-shrink: 0; border-top: 1px solid var(--sand); }
+.jery-resize { position: absolute; top: -4px; left: 0; right: 0; height: 8px; cursor: ns-resize; z-index: 2; }
+.jery-resize:hover { background: var(--sand); opacity: .6 }
 .jery-expanded[hidden] { display: none; }
 .jery-panel-heading { padding: 8px 16px; display: flex; justify-content: space-between; }
 .jery-expanded .chat { height: calc(100% - 34px); }
