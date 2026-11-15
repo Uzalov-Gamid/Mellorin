@@ -33,7 +33,7 @@ theme = "dark"
 
 These are the defaults used when creating a missing config; existing configuration is preserved. A leading `~/` in `vault_path` expands to the home directory. The vault directory must exist before launching the CLI. The settings popover displays the configured path and the JERY vault-edit toggle. The app uses the light design tokens.
 
-`vocab_add` serializes writes within the app, validates single-line input, creates the vocabulary directory as needed, and appends `- **word** — sentence` to `vocabulary/mywords-list.md`. Duplicate detection matches the exact word, including case. Other bounded vault commands and state/format operations are described below.
+`vocab_add` serializes writes within the app and validates single-line input. It prefers the existing `Learning/English/vocabulary/mywords-list.md` five-column table, appends compatible rows and changes only the selected status cell while preserving unrelated bytes. A missing canonical file retains the MVP `vocabulary/mywords-list.md` bullet format. `vocab_list` reads bounded entries with source paths. Duplicate detection matches the complete word or phrase exactly, including case. Malformed or ambiguous tables and outside-vault symlinks are rejected. Other bounded vault commands and state/format operations are described below.
 
 ## Current limits
 
