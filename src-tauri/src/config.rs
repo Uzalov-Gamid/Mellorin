@@ -13,8 +13,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            vault_path: "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/MainStorage"
-                .into(),
+            vault_path: "~/MellorinVault".into(),
             claude_path: "claude".into(),
             theme: "dark".into(),
         }
