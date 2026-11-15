@@ -7,7 +7,7 @@
 
 Mellorin is a desktop study companion built with Tauri, React and Rust. It brings a chat interface and an English reading workspace together around a local Markdown vault. Claude Code CLI is the technical dependency that handles chat and contextual translation.
 
-The source version is **0.1.0**, as declared in `package.json` and `src-tauri/tauri.conf.json`; this is not a release or tag badge. Runtime details below include the implementation in `b5b7828` (maintained separately from this documentation branch).
+The source version is **0.1.0**, as declared in `package.json` and `src-tauri/tauri.conf.json`; this is not a release or tag badge.
 
 ## What works today
 

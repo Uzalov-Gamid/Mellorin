@@ -1,6 +1,6 @@
 # Implemented architecture
 
-Mellorin uses a React/TypeScript frontend in a Tauri 2 desktop shell and a Rust backend. This describes the implemented runtime including `b5b7828`, maintained separately from the documentation branch. There are no direct model API calls in Mellorin; AI requests use the installed Claude Code CLI.
+Mellorin uses a React/TypeScript frontend in a Tauri 2 desktop shell and a Rust backend. There are no direct model API calls in Mellorin; AI requests use the installed Claude Code CLI.
 
 ```text
 React App / Chat / TextViewer
