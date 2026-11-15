@@ -17,14 +17,14 @@ it('shows real counts, displays note examples and polls completed requests away'
   const body = '# Synthetic missing block\nFormat: formats/english-reading.json\nExample: {"type":"map"}';
   runtime.invoke.mockResolvedValue({ open: [{ name: '2026-11-15-map.md', body }] });
   expect(render().find(e => e.type === 'button')!.props['aria-label']).toContain('…');
-  await flush(); let tree = render(); expect(tree[0].props['aria-label']).toBe('Заявки блоков: 1');
-  tree[0].props.onClick!(); tree = render(); expect(tree.some(e => e.type === 'pre' && e.props.children === body)).toBe(true);
+  await flush(); let tree = render(); expect(tree.find(e => e.type === 'button')!.props['aria-label']).toBe('Заявки блоков: 1');
+  tree.find(e => e.type === 'button')!.props.onClick!(); tree = render(); expect(tree.some(e => e.type === 'pre' && e.props.children === body)).toBe(true);
   runtime.invoke.mockResolvedValue({ open: [] }); vi.advanceTimersByTime(5000); await flush(); tree=render();
-  expect(tree[0].props['aria-label']).toBe('Заявки блоков: 0'); expect(tree.some(e => e.props.children === 'Открытых заявок нет.')).toBe(true);
+  expect(tree.find(e => e.type === 'button')!.props['aria-label']).toBe('Заявки блоков: 0'); expect(tree.some(e => e.props.children === 'Открытых заявок нет.')).toBe(true);
   expect(runtime.invoke).toHaveBeenCalledWith('requests_snapshot');
 });
 it('shows an unknown count and diagnostic instead of retaining a false total on read failure', async () => {
   runtime.invoke.mockRejectedValue(Error('outside vault'));
-  render(); await flush(); let tree=render(); expect(tree[0].props['aria-label']).toBe('Заявки блоков: ?');
-  tree[0].props.onClick!(); tree=render(); expect(tree.some(e => e.props.role === 'alert')).toBe(true);
+  render(); await flush(); let tree=render(); expect(tree.find(e => e.type === 'button')!.props['aria-label']).toBe('Заявки блоков: ?');
+  tree.find(e => e.type === 'button')!.props.onClick!(); tree=render(); expect(tree.some(e => e.props.role === 'alert')).toBe(true);
 });

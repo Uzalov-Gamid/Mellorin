@@ -80,6 +80,12 @@ pub fn request(
     );
     let example = example.unwrap_or("No example supplied");
     ensure!(example.len() <= 262144, "request example exceeds 256 KiB");
+    let excerpt: String = example.chars().take(12000).collect();
+    let example = if excerpt.len() < example.len() {
+        format!("{excerpt}\n[Example truncated; full block is in formats/{format}.json]")
+    } else {
+        excerpt
+    };
     let parent = directory(vault, "app-requests")?;
     create_once(&parent.join(format!("{date}-{block}.md")), &format!("# Requested block: {block}\n\nFormat: formats/{format}.json\nDate: {date}\n\nStatus: open\n\nThe format renderer needs this block type.\n\nExample (data only):\n{example}\n"))
 }
@@ -160,6 +166,22 @@ mod tests {
         ] {
             assert!(request(dir.path(), date, block, "test", None).is_err());
         }
+    }
+    #[test]
+    fn large_unicode_request_example_remains_readable_in_inbox() {
+        let dir = tempfile::tempdir().unwrap();
+        request(
+            dir.path(),
+            "2026-11-15",
+            "missing",
+            "english-reading",
+            Some(&"文".repeat(30000)),
+        )
+        .unwrap();
+        let notes = crate::requests::snapshot(dir.path()).unwrap();
+        assert_eq!(notes.open.len(), 1);
+        assert!(notes.open[0].body.contains("Example truncated"));
+        assert!(notes.open[0].body.len() < 65536);
     }
     #[cfg(unix)]
     #[test]
