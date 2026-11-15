@@ -149,11 +149,15 @@ mod subject_tests {
 }
 
 // Write beside the original and rename only after the complete replacement is durable.
-fn replace_file(path: &Path, contents: &[u8]) -> anyhow::Result<()> {
+pub(crate) fn replace_file(path: &Path, contents: &[u8]) -> anyhow::Result<()> {
     use std::sync::atomic::{AtomicU64, Ordering};
     static NEXT: AtomicU64 = AtomicU64::new(0);
+    let name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .ok_or_else(|| anyhow::anyhow!("invalid file name"))?;
     let temp = path.with_file_name(format!(
-        ".mywords-list.{}.{}.tmp",
+        ".{name}.{}.{}.tmp",
         std::process::id(),
         NEXT.fetch_add(1, Ordering::Relaxed)
     ));

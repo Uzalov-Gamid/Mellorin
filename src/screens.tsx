@@ -3,6 +3,7 @@ export const screens = [{ id: "english/reading", subject: "english", skill: "rea
 export type ScreenId = string;
 export function screenFromHash(hash: string): ScreenId {
   const id = hash.replace(/^#\/?/, "");
+  if (!id) return "home";
   return id === "home" || /^[\p{L}\p{N}_-]+\/[\p{L}\p{N}_-]+$/u.test(id) ? id : "english/reading";
 }
 

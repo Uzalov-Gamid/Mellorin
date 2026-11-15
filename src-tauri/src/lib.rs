@@ -34,6 +34,25 @@ fn learning_init(app: AppHandle, prompt: String) -> Result<(), String> {
         .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+async fn today_set_done(
+    app: AppHandle,
+    id: String,
+    done: bool,
+    expected_date: String,
+) -> Result<(), String> {
+    static LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _guard = LOCK.lock().await;
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    learning::set_task_done(
+        std::path::Path::new(&config.vault_path),
+        &id,
+        done,
+        &expected_date,
+    )
+    .map_err(|e| e.to_string())
+}
+
 static VOCAB_WRITE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 #[tauri::command]
@@ -142,6 +161,7 @@ pub fn run() {
             vault_list,
             learning_snapshot,
             learning_init,
+            today_set_done,
             vocab_add,
             vocab_set_status,
             explain_sentence,
