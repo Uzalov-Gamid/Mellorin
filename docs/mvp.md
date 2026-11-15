@@ -20,7 +20,7 @@ A working desktop app where Gamid can chat with JERY and work with English texts
 - Mark word as unknown → appended to `vocabulary/mywords-list.md`
 
 ### 3. Config
-- `pulse.toml` with vault path, Claude binary path, theme
+- `mellorin.toml` with vault path, Claude binary path, theme
 - Dark theme only for MVP
 
 ## Out of scope for MVP
@@ -33,4 +33,4 @@ A working desktop app where Gamid can chat with JERY and work with English texts
 
 ## Done when
 
-Gamid can open Pulse, chat with JERY about a DevOps topic, and work through an ELLLO listening text — without opening Claude Code terminal or Obsidian manually.
+Gamid can open Mellorin, chat with JERY about a DevOps topic, and work through an ELLLO listening text — without opening Claude Code terminal or Obsidian manually.

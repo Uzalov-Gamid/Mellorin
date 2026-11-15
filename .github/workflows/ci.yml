@@ -10,12 +10,26 @@ jobs:
   rust:
     name: Rust checks
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src-tauri
     steps:
       - uses: actions/checkout@v4
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
       - run: cargo fmt --check
       - run: cargo clippy -- -D warnings
       - run: cargo test
@@ -25,12 +39,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check icon PNG format
+        run: python3 scripts/check_icons.py
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - uses: pnpm/action-setup@v4
-        with:
-          version: latest
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm test --run
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test

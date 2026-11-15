@@ -1,85 +1,40 @@
-# Architecture
+# Implemented architecture
 
-## Overview
+Mellorin uses a React/TypeScript frontend in a Tauri 2 desktop shell and a Rust backend. There are no direct model API calls in Mellorin; AI requests use the installed Claude Code CLI.
 
-```
-┌─────────────────────────────────────────┐
-│                  Pulse                  │
-│  ┌─────────────────┐  ┌──────────────┐  │
-│  │   Chat (JERY)   │  │  Visual UI   │  │
-│  │  React/TS       │  │  panels,     │  │
-│  │  message list   │  │  cards,      │  │
-│  │  input          │  │  texts       │  │
-│  └────────┬────────┘  └──────┬───────┘  │
-│           │                  │          │
-│           └──────┬───────────┘          │
-│                  ▼                      │
-│           Tauri IPC layer               │
-│                  │                      │
-│           Rust backend                  │
-│        ┌─────────┴──────────┐           │
-│        │  vault reader/     │           │
-│        │  writer (md files) │           │
-│        │  subprocess mgr    │           │
-│        └─────────┬──────────┘           │
-└──────────────────┼──────────────────────┘
-                   │
-         ┌─────────┴──────────┐
-         │  Local filesystem  │
-         │  MainStorage vault │
-         │  (md files)        │
-         └─────────┬──────────┘
-                   │
-         ┌─────────┴──────────┐
-         │  Claude Code CLI   │
-         │  subprocess        │
-         │  (uses subscription│
-         │   not API)         │
-         └────────────────────┘
+```text
+React App / Chat / TextViewer
+          │ Tauri commands and events (src/subprocess.ts)
+Rust command handlers (src-tauri/src/lib.rs)
+          ├── config.rs → app config directory / mellorin.toml
+          ├── subprocess.rs → Claude Code CLI → remote service
+          └── vault.rs → vault / vocabulary / mywords-list.md
 ```
 
-## Key components
+## Chat and translation
 
-### Tauri backend (Rust)
+`SubprocessManager` owns a chat process and its stdin, tracks running state, and stops the child on disconnect. Chat launches with `-p --input-format stream-json --output-format stream-json --verbose --include-partial-messages`. User messages are newline-delimited JSON on stdin.
 
-- **SubprocessManager** — spawns and manages `claude` CLI process, handles stdin/stdout streaming
-- **VaultReader** — reads Markdown files from the vault directory
-- **VaultWriter** — writes updated Markdown back (vocabulary, notes, progress)
-- **ConfigManager** — loads `pulse.toml` from the vault or app config dir
+The stdout parser emits incremental text from `stream_event` content-block text deltas. Completed `assistant` messages contribute only text not already streamed; nested agent messages are ignored. Successful `result` messages complete a turn; failed results and process/protocol failures become errors. Rust forwards `chat-delta`, `chat-done`, `chat-error`, and `subprocess-exit` events to the frontend. Stderr is retained as bounded diagnostic context for unsuccessful process exits.
 
-### Frontend (React/TypeScript)
+Translation is a separate one-shot helper: `claude -p --output-format json`. The prompt contains the selected word and sentence as JSON data and is written to stdin. The helper checks process status and structured result errors, then returns nonempty result text for the popup.
 
-- **ChatPanel** — message thread with JERY, streams Claude output
-- **TextViewer** — renders text with clickable sentences/words, inline translation
-- **WordStudy** — card-based vocabulary review (flip, sentence, dictation modes)
-- **SettingsPanel** — UI over `pulse.toml`
+Both processes run with the configured vault as their working directory. Claude Code loads vault rules through its normal instruction discovery; Mellorin does not pass an explicit system-prompt argument or inject the whole vault. CLI permissions and settings govern its file access and service behavior.
 
-## Data flow: chat message
+## Configuration and local writes
 
-```
-User types → ChatPanel → Tauri IPC → SubprocessManager
-  → claude subprocess stdin
-  → stdout stream → Tauri IPC → ChatPanel renders
-  → if file change needed → VaultWriter
-```
-
-## Configuration
-
-`pulse.toml` lives in the vault root or `~/.config/pulse/pulse.toml`.
+`Config::load` resolves Tauri's `app_config_dir()` and reads `mellorin.toml`. For identifier `dev.mellorin.app`, the macOS location is `~/Library/Application Support/dev.mellorin.app/mellorin.toml`. Configuration uses flat keys:
 
 ```toml
-[vault]
-path = "~/Library/Mobile Documents/iCloud~md~obsidian/Documents/MainStorage"
-
-[claude]
-binary = "claude"          # path to claude CLI
-model = "claude-opus-4-5"  # optional override
-
-[ui]
+vault_path = "~/MellorinVault"
+claude_path = "claude"
 theme = "dark"
-font_size = 14
 ```
 
-## AI: how JERY runs inside Pulse
+These are the defaults used when creating a missing config; existing configuration is preserved. A leading `~/` in `vault_path` expands to the home directory. The vault directory must exist before launching the CLI. The frontend displays the configured path; there is no settings editor or theme switcher.
 
-The Claude subprocess is started with `--system-prompt` pointing to the vault's `CLAUDE.md`. This means JERY has the same rules and context as in a normal Claude Code session. The vault path is injected so Claude can read and write files directly.
+`vocab_add` serializes writes within the app, validates single-line input, creates the vocabulary directory as needed, and appends `- **word** — sentence` to `vocabulary/mywords-list.md`. Duplicate detection matches the exact word, including case. This is the backend's implemented vault write operation; there is no general vault reader, indexer, or notes/progress manager.
+
+## Current limits
+
+Chat history and pasted reading text live in frontend memory. There is no persisted conversation browser, vocabulary review deck, or additional study module. Local Markdown storage does not make AI features offline: prompts and translation context reach the CLI service, and CLI tools may access vault files. The synthetic browser demos validate UI presentation with a mocked bridge, not native execution, live service compatibility, or real filesystem persistence.

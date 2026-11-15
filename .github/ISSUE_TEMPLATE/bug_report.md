@@ -16,5 +16,5 @@ What should have happened.
 
 **Environment**
 - OS:
-- Pulse version:
+- Mellorin version:
 - Vault path (if relevant):
