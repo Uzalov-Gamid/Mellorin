@@ -39,6 +39,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check icon PNG format
+        run: python3 scripts/check_icons.py
       - uses: actions/setup-node@v4
         with:
           node-version: 20
