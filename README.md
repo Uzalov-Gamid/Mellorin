@@ -1,14 +1,17 @@
-# Mellorin
+# <img src="src-tauri/icons/128x128.png" width="64" height="64" alt="Mellorin app icon"> Mellorin
 
 [![CI · develop](https://github.com/Uzalov-Gamid/Mellorin/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/Uzalov-Gamid/Mellorin/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Source version: 0.1.0](https://img.shields.io/badge/source_version-0.1.0-blue)
 ![Stage: pre-alpha](https://img.shields.io/badge/stage-pre--alpha-yellow)
 
 Mellorin is a desktop study companion built with Tauri, React and Rust. It brings a chat interface and an English reading workspace together around a local Markdown vault. Claude Code CLI is the technical dependency that handles chat and contextual translation.
 
+The source version is **0.1.0**, as declared in `package.json` and `src-tauri/tauri.conf.json`; this is not a release or tag badge. Runtime details below include the implementation in `b5b7828` (maintained separately from this documentation branch).
+
 ## What works today
 
-- Connect/disconnect a Claude Code subprocess and exchange messages in a session. Assistant text is displayed as stream-json messages arrive.
+- Connect/disconnect a Claude Code subprocess and exchange messages in a session. Assistant text is displayed incrementally from stream-json `stream_event` text deltas; completed assistant messages supply any remaining text without repeating streamed content.
 - Paste text into the reading tab, then click individual words for a short Russian translation in sentence context.
 - Mark words as unfamiliar: the backend appends the word and sentence to `vocabulary/mywords-list.md` in the configured vault, skipping exact-word duplicates.
 - Read the configured vault path in the UI. Configuration is edited in a TOML file; the interface currently uses Russian labels and a dark theme.
@@ -66,9 +69,9 @@ claude_path = "/absolute/path/to/claude"
 theme = "dark"
 ```
 
-`vault_path` supports a leading `~/`. `theme` is stored in configuration, but the current UI has no theme switcher. The backend creates a config with defaults if none exists. It does not provide a vault picker or settings editor.
+`vault_path` supports a leading `~/`. `theme` is stored in configuration, but the current UI has no theme switcher. The backend creates a config with defaults if none exists: `vault_path = "~/MellorinVault"`, `claude_path = "claude"`, and `theme = "dark"`. Existing configurations are preserved. Create the configured vault directory before connecting. It does not provide a vault picker or settings editor.
 
-Vocabulary files are local Markdown. **This is not an offline-only application:** chat prompts and translation word/sentence context go to Claude Code, whose service receives prompts and may receive vault context through its tools. The subprocess runs inside the configured vault and can access files according to its own permissions and settings. Use a disposable vault to evaluate behavior before choosing any real study material. Mellorin currently launches chat without an explicit system-prompt argument; vault instruction handling depends on the CLI.
+Vocabulary files are local Markdown. **This is not an offline-only application:** chat prompts and translation word/sentence context go to Claude Code, whose service receives prompts and may receive vault context through its tools. The subprocess runs inside the configured vault and can access files according to its own permissions and settings. Use a disposable vault to evaluate behavior before choosing any real study material. Both chat and translation use the vault as their working directory, allowing the CLI to load its vault rules (including `CLAUDE.md`) through normal instruction discovery. Mellorin passes no explicit system-prompt argument.
 
 ## Architecture
 
@@ -80,7 +83,7 @@ Rust: configuration / subprocess manager / vocabulary writer
           └── Claude Code CLI → remote service
 ```
 
-The chat manager sends newline-delimited stream-json over stdin and maps assistant/result messages to frontend events. Translation invokes a separate `claude -p` process with the selected word and sentence. Vocabulary saving writes Markdown directly from Rust. See [`src/subprocess.ts`](src/subprocess.ts), [`src-tauri/src/subprocess.rs`](src-tauri/src/subprocess.rs), and [`src-tauri/src/vault.rs`](src-tauri/src/vault.rs) for the implemented boundaries.
+The chat manager launches the CLI with `--include-partial-messages`, sends newline-delimited stream-json over stdin, and maps `stream_event` text deltas, assistant completions, and result/error messages to frontend events. Translation invokes a separate `claude -p --output-format json` process, sends the selected word and sentence in a prompt through stdin, and checks the structured result for errors. Vocabulary saving writes Markdown directly from Rust. See [`src/subprocess.ts`](src/subprocess.ts), [`src-tauri/src/subprocess.rs`](src-tauri/src/subprocess.rs), and [`src-tauri/src/vault.rs`](src-tauri/src/vault.rs) for the implemented boundaries.
 
 ## Development
 
@@ -96,7 +99,7 @@ cargo test
 
 The [CI workflow](.github/workflows/ci.yml) runs frontend type checks/tests and Rust formatting, linting, and tests. The badge reports the `develop` workflow status; it is not a guarantee of native end-to-end behavior on every platform.
 
-See [contributing](CONTRIBUTING.md) for workflow conventions. The older [architecture proposal](docs/architecture.md) and [MVP scope](docs/mvp.md) include design goals; their component lists and configuration examples are not authoritative for the current implementation. This README describes the code at the current baseline.
+See the [implemented architecture](docs/architecture.md) for component boundaries and [contributing](CONTRIBUTING.md) for workflow conventions. The [MVP scope](docs/mvp.md) records planning goals, not a list of completed features.
 
 ## License
 
