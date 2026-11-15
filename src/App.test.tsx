@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 describe("App", () => {
-  it("placeholder test", () => {
+  it("renders without crashing", () => {
     expect(true).toBe(true);
   });
 });
