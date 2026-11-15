@@ -1,5 +1,5 @@
 import { FormatScreen } from "./blocks/FormatScreen";
-export const screens = [{ id: "english/reading", subject: "english", skill: "reading", component: FormatScreen }];
+export const screens = [{ id: "english/reading", subject: "english", skill: "reading", component: FormatScreen }, { id: "english/words", subject: "english", skill: "words", component: FormatScreen }];
 export type ScreenId = string;
 export function screenFromHash(hash: string): ScreenId {
   const id = hash.replace(/^#\/?/, "");
@@ -8,5 +8,5 @@ export function screenFromHash(hash: string): ScreenId {
 }
 
 export function ScreenPanels({ active }: { active: string }) {
-  return <>{screens.map(({ id, component: Component }) => <div className="tab-panel" key={id} hidden={id !== active}><Component /></div>)}</>;
+  return <>{screens.map(({ id, component: Component, subject, skill }) => <div className="tab-panel" key={id} hidden={id !== active}><Component subject={subject} skill={skill} /></div>)}</>;
 }
