@@ -4,6 +4,7 @@ import { type ReactElement, type ReactNode } from "react";
 // A hook renderer keeps these interaction tests independent of a browser/DOM package.
 const runtime = vi.hoisted(() => ({
   slots: [] as unknown[], cursor: 0, effects: [] as (() => void | (() => void))[],
+  cleanups: [] as (() => void)[],
   invoke: vi.fn(), listeners: new Map<string, (event: { payload: unknown }) => void>(),
 }));
 vi.mock("react", async importOriginal => {
@@ -59,7 +60,10 @@ function content(node: ReactNode): string {
 function render(component: () => ReactElement) {
   runtime.cursor = 0;
   const tree = component();
-  runtime.effects.splice(0).forEach(effect => effect());
+  runtime.effects.splice(0).forEach(effect => {
+    const cleanup = effect();
+    if (cleanup) runtime.cleanups.push(cleanup);
+  });
   return tree;
 }
 function find(tree: ReactNode, predicate: (element: ReactElement<Props>) => boolean) {
@@ -69,6 +73,7 @@ function find(tree: ReactNode, predicate: (element: ReactElement<Props>) => bool
 }
 const flush = async () => { for (let i = 0; i < 12; i++) await Promise.resolve(); };
 beforeEach(() => {
+  runtime.cleanups.splice(0).forEach(cleanup => cleanup());
   runtime.slots = []; runtime.effects = []; runtime.listeners.clear(); runtime.invoke.mockReset();
   runtime.invoke.mockImplementation((command: string) => Promise.resolve(command === "subprocess_status" ? false : undefined));
 });
@@ -94,6 +99,28 @@ describe("Chat IPC interactions", () => {
     expect(find(tree, e => e.type === "textarea").props.disabled).toBe(false);
     runtime.listeners.get("chat-error")?.({ payload: { message: "Сбой процесса" } });
     expect(content(render(Chat))).toContain("Сбой процесса");
+  });
+});
+describe("Chat connection lifecycle", () => {
+  it("keeps the UI disconnected when the process exits before start resolves", async () => {
+    let tree = render(Chat); await flush(); tree = render(Chat);
+    let resolveStart: () => void = () => {};
+    runtime.invoke.mockImplementation((command: string) => command === "subprocess_start"
+      ? new Promise<void>(resolve => { resolveStart = resolve; }) : Promise.resolve(false));
+    const starting = find(tree, e => e.type === "button" && content(e) === "Подключиться").props.onClick?.();
+    runtime.listeners.get("subprocess-exit")?.({ payload: null });
+    resolveStart(); await starting;
+    tree = render(Chat);
+    expect(content(tree)).toContain("Подключиться");
+    expect(find(tree, e => e.type === "textarea").props.disabled).toBe(true);
+  });
+  it("does not overwrite an exit event with an older status response", async () => {
+    let resolveStatus: (running: boolean) => void = () => {};
+    runtime.invoke.mockImplementation(() => new Promise<boolean>(resolve => { resolveStatus = resolve; }));
+    render(Chat); await flush();
+    runtime.listeners.get("subprocess-exit")?.({ payload: null });
+    resolveStatus(true); await flush();
+    expect(content(render(Chat))).toContain("Подключиться");
   });
 });
 describe("TextViewer IPC interactions", () => {
@@ -126,5 +153,28 @@ describe("TextViewer IPC interactions", () => {
     runtime.slots = viewerSlots;
     tree = render(TextViewer);
     expect(find(tree, e => e.type === "button" && content(e) === "Hello").props.className).toContain("word-unknown");
+  });
+});
+
+describe("Word popup lifecycle", () => {
+  it("ignores a pending save completion after its popup is unmounted", async () => {
+    let tree = render(TextViewer);
+    find(tree, e => e.type === "textarea").props.onChange?.({ target: { value: "Hello world." } });
+    tree = render(TextViewer);
+    await find(tree, e => e.type === "button" && content(e) === "Читать →").props.onClick?.();
+    tree = render(TextViewer);
+    await find(tree, e => e.type === "button" && content(e) === "Hello").props.onClick?.();
+    const popup = find(render(TextViewer), e => typeof e.type === "function");
+    runtime.slots = [];
+    let resolveSave: () => void = () => {};
+    runtime.invoke.mockImplementation((command: string) => command === "translate" ? Promise.resolve("Привет")
+      : new Promise<void>(resolve => { resolveSave = resolve; }));
+    const onSaved = vi.fn();
+    const component = () => (popup.type as (props: Props) => ReactElement)({ ...popup.props, onSaved } as Props);
+    const popupTree = render(component);
+    const saving = find(popupTree, e => e.type === "button" && content(e) === "Отметить как незнакомое").props.onClick?.();
+    runtime.cleanups.splice(0).forEach(cleanup => cleanup());
+    resolveSave(); await saving;
+    expect(onSaved).not.toHaveBeenCalled();
   });
 });

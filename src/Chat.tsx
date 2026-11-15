@@ -12,6 +12,7 @@ export function Chat() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const pending = useRef(false);
+  const exits = useRef(0);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView?.({ behavior: "smooth" }); }, [messages]);
@@ -30,13 +31,14 @@ export function Chat() {
       }),
       onChatDone(finish),
       onChatError(({ message }) => { setError(message); finish(); }),
-      onExit(() => { setRunning(false); finish(); }),
+      onExit(() => { exits.current += 1; setRunning(false); finish(); }),
     ].map(subscription => subscription.then(unlisten => {
       if (disposed) unlisten(); else cleanups.push(unlisten);
     }));
     Promise.all(subscriptions).then(async () => {
+      const observedExits = exits.current;
       const status = await getStatus();
-      if (!disposed) { setRunning(status); setReady(true); }
+      if (!disposed) { setRunning(status && exits.current === observedExits); setReady(true); }
     }).catch((reason: unknown) => { if (!disposed) setError(String(reason)); });
     return () => { disposed = true; cleanups.forEach(fn => fn()); };
   }, []);
@@ -46,8 +48,12 @@ export function Chat() {
     setError(null);
     try {
       if (running) { await stopSubprocess(); pending.current = false; setLoading(false); }
-      else await startSubprocess();
-      setRunning(!running);
+      else {
+        const observedExits = exits.current;
+        await startSubprocess();
+        setRunning(exits.current === observedExits);
+      }
+      if (running) setRunning(false);
     } catch (reason) { setError(String(reason)); }
     finally { setBusy(false); }
   }

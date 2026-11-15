@@ -57,7 +57,7 @@ Special tags:
 
 ## What JERY does here
 
-JERY is the AI persona that runs inside Mellorin. It reads the same CLAUDE.md and vault rules as in Obsidian MainStorage. When implementing chat features, the system prompt injected into the Claude subprocess must load from the vault's CLAUDE.md, not be hardcoded here.
+JERY is the AI persona that runs inside Mellorin. Start the CLI in the configured vault directory so it loads that vault's CLAUDE.md and project rules. Keep persona instructions in the user's vault rather than hardcoding them in the application. Use a temporary synthetic vault for development and tests.
 
 ## Issues and PRs
 
