@@ -74,8 +74,8 @@ export function WordStudy() {
         <div className="words-dots" aria-label={`Слово ${index + 1} из 10`}>{lesson.words.map((w, i) => { const o = outcomes.find(a => a.word === w.word && a.step === stage); return <span key={w.word} aria-label={`${i + 1}: ${o ? o.correct ? 'верно' : 'ошибка' : i === index ? 'текущее' : 'ожидает'}`} className={o ? o.correct ? 'correct' : 'wrong' : i === index ? 'current' : ''} />; })}</div>
         <article className="words-paper">
           <div className="words-heading"><strong>{stage === 4 ? 'Диктант: послушай слово' : stage === 3 ? word.translation : stage === 2 ? word.sentenceGap.sentence : word.word}</strong>{stage < 3 && word.ipa && <span>{word.ipa}</span>}</div>
-          {(stage === 0 || stage === 4) && <button onClick={speak}>▸ слушать</button>}
-          {(stage !== 4 || outcome) && <a target="_blank" rel="noreferrer" href={`https://youglish.com/pronounce/${encodeURIComponent(word.word)}/english`}>▸ YouGlish</a>}
+          <div className="words-actions">{(stage === 0 || stage === 4) && <button onClick={speak}>▸ слушать</button>}
+          {(stage !== 4 || outcome) && <a target="_blank" rel="noreferrer" href={`https://youglish.com/pronounce/${encodeURIComponent(word.word)}/english`}>▸ YouGlish</a>}</div>
           {speechError && <p role="status">{speechError}</p>}{speechError && stage === 4 && !outcome && <button onClick={() => answer('')}>Пропустить: звук недоступен</button>}
           {stage === 0 && <><button onClick={() => { started.current = true; setRevealed(true); }}>Показать перевод</button>{revealed && <p>{word.translation}</p>}{word.example ? <blockquote>{word.exampleSource && `${word.exampleSource}: `}{word.example}</blockquote> : <p>Пример в источнике не указан.</p>}</>}
           {stage >= 1 && stage <= 3 && quiz && <div className="words-options">{quiz.choices.map((c, i) => <button key={c} disabled={!!outcome} className={outcome && (i === quiz.answer ? 'correct' : outcome.answer === c ? 'wrong' : '') || ''} onClick={() => answer(i)}>{['а', 'б', 'в', 'г'][i]} · {c}</button>)}</div>}

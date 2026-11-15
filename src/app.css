@@ -384,3 +384,12 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 .words-dots .wrong { background:#b0381a; }
 .words-correct { color:#1f6b5c; } .words-wrong { color:#b0381a; }
 @media(max-width:700px) { .words-paper { padding:24px; } .words-options { grid-template-columns:1fr; } .words-heading strong { font-size:30px; } }
+
+.word-study button { font: inherit; font-size: 13px; border: 1px solid var(--sand); background: transparent; color: var(--stone); border-radius: 8px; padding: 6px 12px; cursor: pointer; align-self: flex-start; }
+.word-study button:disabled { cursor: default; }
+.words-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.words-actions button { color: var(--ember); border-color: var(--ember); }
+.words-actions a { color: var(--stone); border: 1px solid var(--sand); padding: 6px 12px; border-radius: 8px; font-size: 13px; text-decoration: none; }
+.words-paper > button:last-of-type { align-self: flex-end; background: var(--ember); color: var(--paper); border-color: var(--ember); padding: 8px 20px; font-size: 14px; }
+.words-options button { align-self: stretch; font-size: 15px; }
+.words-dots span { width: 8px; height: 8px; border-radius: 50%; }
