@@ -2,7 +2,7 @@ mod subprocess;
 
 use std::sync::Arc;
 use subprocess::SubprocessManager;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, State};
 
 pub struct AppState {
     pub subprocess: Arc<SubprocessManager>,
@@ -32,10 +32,7 @@ async fn subprocess_start(
 }
 
 #[tauri::command]
-async fn subprocess_send(
-    state: State<'_, AppState>,
-    message: String,
-) -> Result<(), String> {
+async fn subprocess_send(state: State<'_, AppState>, message: String) -> Result<(), String> {
     state
         .subprocess
         .send(&message)
@@ -45,11 +42,7 @@ async fn subprocess_send(
 
 #[tauri::command]
 async fn subprocess_stop(state: State<'_, AppState>) -> Result<(), String> {
-    state
-        .subprocess
-        .stop()
-        .await
-        .map_err(|e| e.to_string())
+    state.subprocess.stop().await.map_err(|e| e.to_string())
 }
 
 #[tauri::command]
