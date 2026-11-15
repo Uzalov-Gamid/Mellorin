@@ -39,10 +39,19 @@ fn create_once(path: &Path, body: &str) -> anyhow::Result<()> {
     }
 }
 pub fn seed(vault: &Path) -> anyhow::Result<()> {
+    // Both mounted format screens can request the fixed defaults simultaneously.
+    static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+    let _guard = LOCK
+        .lock()
+        .map_err(|_| anyhow::anyhow!("format seed lock poisoned"))?;
     let formats = directory(vault, "formats")?;
     create_once(
         &formats.join("english-reading.json"),
         include_str!("../../formats/english-reading.json"),
+    )?;
+    create_once(
+        &formats.join("english-words.json"),
+        include_str!("../../formats/english-words.json"),
     )?;
     let parent = directory(vault, ".mellorin")?;
     let readme = parent.join("README.md");
@@ -133,8 +142,20 @@ mod tests {
         )
         .unwrap();
         seed(dir.path()).unwrap();
+        assert!(vault::read_text(dir.path(), "formats/english-words.json")
+            .unwrap()
+            .contains("word-study"));
         std::fs::write(dir.path().join("formats/english-reading.json"), "custom").unwrap();
+        std::fs::write(
+            dir.path().join("formats/english-words.json"),
+            "custom words",
+        )
+        .unwrap();
         seed(dir.path()).unwrap();
+        assert_eq!(
+            vault::read_text(dir.path(), "formats/english-words.json").unwrap(),
+            "custom words"
+        );
         assert_eq!(
             vault::read_text(dir.path(), "formats/english-reading.json").unwrap(),
             "custom"

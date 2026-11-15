@@ -67,7 +67,7 @@ export function useJery() {
     try { await sendMessage(text); }
     catch (reason) { setError(String(reason)); pending.current = false; setLoading(false); }
   }
-  async function sendText(text: string) {
+  async function sendText(text: string, displayText = text) {
     if (!text.trim() || !ready || pending.current || busy || sending.current) return;
     sending.current = true;
     setBusy(true);
@@ -81,7 +81,7 @@ export function useJery() {
       }
       pending.current = true;
       setLoading(true);
-      setMessages(previous => [...previous, { role: "user", text }, { role: "assistant", text: "" }]);
+      setMessages(previous => [...previous, { role: "user", text: displayText }, { role: "assistant", text: "" }]);
       await sendMessage(text);
     } catch (reason) { setError(String(reason)); pending.current = false; setLoading(false); }
     finally { sending.current = false; setBusy(false); }

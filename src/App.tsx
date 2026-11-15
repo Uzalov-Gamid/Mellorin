@@ -61,7 +61,7 @@ export default function App() {
     <JeryBlocks jery={jery} />
     <JeryChanges jery={jery} />
     {taskError && <p role="alert">{taskError}</p>}
-    <JeryFormatContext.Provider value={{ message: jery.messages.filter(message => message.role === "assistant").slice(-1)[0]?.text || "", data: null, intent: (intent, value) => { setExpanded(true); void jery.sendText(`${intent}\nДанные ответа: ${JSON.stringify(value)}`); } }}><ScreenPanels active={screen} /></JeryFormatContext.Provider>
+    <JeryFormatContext.Provider value={{ canSend: jery.ready && !jery.busy && !jery.loading, intentError: jery.error, message: jery.messages.filter(message => message.role === "assistant").slice(-1)[0]?.text || "", data: null, intent: (intent, value) => { setExpanded(true); void jery.sendText(`${intent}\nДанные ответа: ${JSON.stringify(value)}`, intent); } }}><ScreenPanels active={screen} /></JeryFormatContext.Provider>
     {screen === "home" && <StateHome snapshot={snapshot} subjects={subjects} busy={taskBusy || !jery.ready || jery.busy || jery.loading} onStart={startTask} onToggle={toggleTask} loading={loading} onRefresh={() => { setExpanded(true); void jery.sendText(REFRESH_PROMPT); }} />}
     {!Screen && screen !== "home" && <section className="empty-screen"><h1>{screen === "home" ? "Главная" : `${selected?.name || screen.split("/")[0]} › ${skill?.name || screen.split("/")[1]}`}</h1><p>Данных для этого экрана пока нет. Начни разговор с JERY.</p></section>}
   </AppShell>;

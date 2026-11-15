@@ -3,15 +3,16 @@ import { invoke } from '@tauri-apps/api/core';
 import { useReading } from '../TextViewer';
 import { vaultReadText } from '../learning';
 import { localDate } from '../homeData';
+import wordsBuiltin from '../../formats/english-words.json';
 import builtin from '../../formats/english-reading.json';
 import { BlockContext } from './context';
 import { BlockView, blockTypes } from './index';
 import { parseFormat, simpleName, type Data, type Format } from './schema';
-export const JeryFormatContext = createContext<{ message: string; data: Data; intent: (intent: string, value: Data) => void }>({ message: '', data: null, intent: () => {} });
+export const JeryFormatContext = createContext<{ canSend?: boolean; intentError?: string | null; message: string; data: Data; intent: (intent: string, value: Data) => void }>({ message: '', data: null, intent: () => {} });
 export function FormatScreen({ subject = 'english', skill = 'reading' }: { subject?: string; skill?: string }) {
   const reading = useReading();
   const jery = useContext(JeryFormatContext);
-  const [format, setFormat] = useState<Format>(subject === 'english' && skill === 'reading' ? builtin as Format : { version: 1, steps: [] });
+  const [format, setFormat] = useState<Format>(subject === 'english' && skill === 'reading' ? builtin as Format : subject === 'english' && skill === 'words' ? wordsBuiltin as Format : { version: 1, steps: [] });
   const [error, setError] = useState('');
   const [requestError, setRequestError] = useState('');
   const requested = useRef(new Set<string>());
@@ -30,7 +31,7 @@ export function FormatScreen({ subject = 'english', skill = 'reading' }: { subje
       finally { pending = false; }
     }
     void (async () => {
-      if (subject === 'english' && skill === 'reading') {
+      if (subject === 'english' && (skill === 'reading' || skill === 'words')) {
         try { await invoke('format_seed'); } catch (reason) { seedError = `Не удалось подготовить формат: ${String(reason)}.`; }
       }
       if (active) await refresh();

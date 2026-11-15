@@ -32,3 +32,5 @@ Props (all optional; wrong prop value types fall back safely):
 The context supplies current JERY message, optional data, explicit intent callback, and shared reading state. Text without a text prop displays the current JERY message. No stream protocol parsing or format apply/rollback is implemented here. Reading's 9 tracker segments remain neutral: format layout steps do not claim an actual lesson step.
 
 `format_seed` has no arguments: it creates only the bundled `formats/english-reading.json` if missing, and appends this contract once to `.mellorin/README.md`, preserving existing instructions. `format_request_block` accepts validated simple block/format names and a calendar date; it never overwrites a note. Both commands canonicalize parent directories inside the configured vault. Local vault writers must not adversarially swap directories during operations (same assumption as the read layer).
+
+`word-study` (no props) renders the English Words six-step session from validated `.mellorin/english-words.json`; see [English Words v1](english-words.md). No personal lesson data is shipped.
