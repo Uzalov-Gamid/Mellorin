@@ -45,6 +45,8 @@ export function WordStudy() {
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if (!root.current || root.current.closest('[hidden]')) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest?.('button,a,[role="dialog"]') && !root.current.contains(target)) return;
       const action = studyKey(event); if (action === null) return;
       if (action === 'next') { event.preventDefault(); next(); }
       else if (stage >= 1 && stage <= 3) { event.preventDefault(); answer(action); }

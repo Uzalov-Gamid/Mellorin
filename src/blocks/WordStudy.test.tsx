@@ -1,8 +1,8 @@
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import type { ReactElement, ReactNode } from 'react';
-const runtime = vi.hoisted(() => ({ slots: [] as unknown[], cursor: 0, effects: [] as (() => void)[], cleanups: [] as (() => void)[], read: vi.fn(), intent: vi.fn() }));
+const runtime = vi.hoisted(() => ({ slots: [] as unknown[], cursor: 0, effects: [] as (() => void)[], cleanups: [] as (() => void)[], read: vi.fn(), intent: vi.fn(), canSend: true, intentError: null as string | null }));
 vi.mock('../learning', () => ({ vaultReadText: runtime.read }));
-vi.mock('./context', () => ({ useBlocks: () => ({ intent: runtime.intent }) }));
+vi.mock('./context', () => ({ useBlocks: () => ({ intent: runtime.intent, canSend: runtime.canSend, intentError: runtime.intentError }) }));
 vi.mock('react', async original => ({ ...await original<typeof import('react')>(),
   useState: (initial: unknown) => { const i = runtime.cursor++; if (!(i in runtime.slots)) runtime.slots[i] = initial; return [runtime.slots[i], (next: unknown) => { runtime.slots[i] = typeof next === 'function' ? next(runtime.slots[i]) : next; }]; },
   useRef: (initial: unknown) => { const i = runtime.cursor++; if (!(i in runtime.slots)) runtime.slots[i] = { current: initial }; return runtime.slots[i]; },
@@ -14,10 +14,10 @@ const lesson = { version: 1, id: 'synthetic', preparedOn: '2026-11-15', words: A
 type Props = { children?: ReactNode; onClick?: () => void; onChange?: (e: { target: { value: string } }) => void; onSubmit?: (e: { preventDefault: () => void }) => void; disabled?: boolean; role?: string; className?: string; ref?: { current: unknown } };
 function elements(node: ReactNode): ReactElement<Props>[] { if (Array.isArray(node)) return node.flatMap(elements); if (!node || typeof node !== 'object' || !('props' in node)) return []; const el = node as ReactElement<Props>; return [el, ...elements(el.props.children)]; }
 let hidden = false;
-function render() { runtime.cursor = 0; const tree = WordStudy(); (tree as unknown as { ref: { current: unknown } }).ref.current = { closest: () => hidden ? {} : null }; runtime.effects.splice(0).forEach(e => e()); return elements(tree); }
+function render() { runtime.cursor = 0; const tree = WordStudy(); (tree as unknown as { ref: { current: unknown } }).ref.current = { closest: () => hidden ? {} : null, contains: () => false }; runtime.effects.splice(0).forEach(e => e()); return elements(tree); }
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
 function click(label: string) { const button = render().find(e => e.type === 'button' && e.props.children === label)!; expect(button).toBeTruthy(); expect(button.props.disabled).not.toBe(true); button.props.onClick!(); }
-beforeEach(() => { vi.useFakeTimers(); vi.stubGlobal('window', new EventTarget()); hidden = false; runtime.slots = []; runtime.effects = []; runtime.cleanups = []; runtime.intent.mockReset(); runtime.read.mockReset().mockResolvedValue(JSON.stringify(lesson)); });
+beforeEach(() => { vi.useFakeTimers(); vi.stubGlobal('window', new EventTarget()); hidden = false; runtime.slots = []; runtime.effects = []; runtime.cleanups = []; runtime.intent.mockReset(); runtime.canSend = true; runtime.intentError = null; runtime.read.mockReset().mockResolvedValue(JSON.stringify(lesson)); });
 afterEach(() => { runtime.cleanups.forEach(f => f()); vi.useRealTimers(); vi.unstubAllGlobals(); });
 it('completes cards and all quiz rounds; sends forty actual outcomes only on explicit submission', async () => {
   render(); await flush(); expect(runtime.intent).not.toHaveBeenCalled();
@@ -34,6 +34,9 @@ it('completes cards and all quiz rounds; sends forty actual outcomes only on exp
     render().find(e => e.type === 'form')!.props.onSubmit!({ preventDefault() {} }); click('Дальше ↵');
   }
   expect(runtime.intent).not.toHaveBeenCalled();
+  runtime.canSend = false;
+  expect(render().find(e => e.props.children === 'Отправить результат JERY')?.props.disabled).toBe(true);
+  runtime.canSend = true;
   click('Отправить результат JERY');
   const payload = runtime.intent.mock.calls[0][1];
   expect(payload.lessonId).toBe('synthetic'); expect(payload.outcomes).toHaveLength(40);
@@ -57,4 +60,13 @@ it('handles unavailable speech and ignores keys on hidden panels', async () => {
   expect(render().some(e => e.props.children === 'word0')).toBe(true);
   hidden = false; window.dispatchEvent(key);
   expect(render().some(e => e.props.children === 'word1')).toBe(true);
+});
+
+it('does not advance Words when Enter targets a button outside the lesson', async () => {
+  render(); await flush(); click('Показать перевод');
+  const event = new Event('keydown');
+  Object.defineProperty(event, 'key', { value: 'Enter' });
+  Object.defineProperty(event, 'target', { value: { closest: () => ({}) } });
+  window.dispatchEvent(event);
+  expect(render().some(e => e.props.children === 'word0')).toBe(true);
 });
