@@ -17,6 +17,12 @@ describe('JERY reply protocol', () => {
       expect(partial.blocks.length).toBe(i >= reply.indexOf('\nПосле') ? 1 : 0);
     }
   });
+  it('accepts first-line JSON and single-line fenced blocks without leaking partial JSON', () => {
+    for (const reply of ['```mellorin ' + JSON.stringify(block) + '\n```', '```mellorin ' + JSON.stringify(block) + ' ```']) {
+      expect(parseReply(reply).blocks).toEqual([block]);
+      for (let i = 0; i <= reply.length; i++) expect(parseReply(reply.slice(0, i), true).text).toBe('');
+    }
+  });
   it('preserves ordinary code and protocol examples nested in code', () => {
     const text = '```text\n' + fence + '\n```\nnormal';
     expect(parseReply(text).text).toBe(text);

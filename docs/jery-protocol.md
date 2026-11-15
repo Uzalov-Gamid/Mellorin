@@ -1,6 +1,6 @@
 # Mellorin reply protocol v1
 
-JERY can include a single data block or an array of blocks in a fenced `mellorin` section. The opening and closing fences must be on their own lines. Use three or more backticks (or tildes), with a closing fence at least as long as the opening fence. Ordinary text before and after remains in chat; protocol JSON is hidden, including while streaming. Other code fences remain ordinary chat text.
+JERY can include a single data block or an array of blocks in a fenced `mellorin` section. Prefer opening and closing fences on their own lines. JSON on the opening line and a single-line fenced section are also accepted. Use three or more backticks (or tildes), with a closing fence at least as long as the opening fence. Ordinary text before and after remains in chat; protocol JSON is hidden, including while streaming. Other code fences remain ordinary chat text.
 
 Example:
 

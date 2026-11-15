@@ -9,20 +9,23 @@ export function parseReply(source: string, streaming = false): Reply {
   let fenceLength = 3;
   let body: string[] = [];
   let ordinaryFence: string | null = null;
+  function complete() {
+    try {
+      const json = body.join('\n');
+      if (json.length > 262144) throw Error('reply section exceeds 256 KiB');
+      const value: unknown = JSON.parse(json);
+      const blocks = Array.isArray(value) ? value : [value];
+      const format = parseFormat(JSON.stringify({ version: 1, steps: [{ id: 'reply', title: '', blocks }] }));
+      if (result.blocks.length + blocks.length > 100) throw Error('more than 100 reply blocks');
+      result.blocks.push(...format.steps[0].blocks);
+    } catch (reason) { result.errors.push(`Не удалось прочитать блок JERY: ${String(reason)}`); }
+  }
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const newline = i < lines.length - 1 ? '\n' : '';
     if (fence) {
       if (new RegExp(`^ {0,3}${fence}{${fenceLength},}\\s*$`).test(line)) {
-        try {
-          const json = body.join('\n');
-          if (json.length > 262144) throw Error('reply section exceeds 256 KiB');
-          const value: unknown = JSON.parse(json);
-          const blocks = Array.isArray(value) ? value : [value];
-          const format = parseFormat(JSON.stringify({ version: 1, steps: [{ id: 'reply', title: '', blocks }] }));
-          if (result.blocks.length + blocks.length > 100) throw Error('more than 100 reply blocks');
-          result.blocks.push(...format.steps[0].blocks);
-        } catch (reason) { result.errors.push(`Не удалось прочитать блок JERY: ${String(reason)}`); }
+        complete();
         fence = null; body = [];
       } else body.push(line);
       continue;
@@ -33,8 +36,15 @@ export function parseReply(source: string, streaming = false): Reply {
       if (opening && opening[1][0] === ordinaryFence && !opening[2].trim()) ordinaryFence = null;
       continue;
     }
-    if (opening && opening[2].trim() === 'mellorin') {
+    if (opening && /^mellorin(?:\s|$)/.test(opening[2].trim())) {
       fence = opening[1][0]; fenceLength = opening[1].length;
+      const rest = opening[2].trim().slice('mellorin'.length).trim();
+      if (rest) {
+        const inlineClose = new RegExp(`${fence}{${fenceLength},}\\s*$`);
+        if (inlineClose.test(rest)) {
+          body = [rest.replace(inlineClose, '').trim()]; complete(); fence = null; body = [];
+        } else body = [rest];
+      }
       continue;
     }
     // An unfinished opening line must never flash protocol text in the chat.
