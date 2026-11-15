@@ -231,6 +231,15 @@ pub fn init_protocol(vault: &Path, prompt: &str) -> anyhow::Result<()> {
         body.push_str("\n\n");
         body.push_str(include_str!("../../docs/jery-protocol.md"));
     }
+    if !existing.contains("## Stage 9: proposed format changes")
+        && !body.contains("## Stage 9: proposed format changes")
+    {
+        let marker = "## Stage 9: proposed format changes";
+        let protocol = include_str!("../../docs/jery-protocol.md");
+        if let Some((_, section)) = protocol.split_once(marker) {
+            body.push_str(&format!("\n\n{marker}{section}"));
+        }
+    }
     if body.is_empty() {
         return Ok(());
     }
@@ -305,6 +314,21 @@ mod tests {
         assert!(validate(invalid, false).is_err());
         std::fs::write(dir.path().join(".mellorin/state.json"), "{invalid").unwrap();
         assert_eq!(snapshot(dir.path()).errors.len(), 1);
+    }
+    #[test]
+    fn migrates_stage_eight_readme_once() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(dir.path().join(".mellorin")).unwrap();
+        let path = dir.path().join(".mellorin/README.md");
+        std::fs::write(&path, "Custom rules\n# Mellorin state protocol v1\n# Mellorin reply protocol v1\nOld reply rules").unwrap();
+        init_protocol(dir.path(), "refresh").unwrap();
+        init_protocol(dir.path(), "refresh").unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(text.starts_with("Custom rules"));
+        assert_eq!(
+            text.matches("## Stage 9: proposed format changes").count(),
+            1
+        );
     }
     #[test]
     fn appends_reply_protocol_to_existing_state_instructions_once() {

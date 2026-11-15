@@ -68,3 +68,8 @@ The frontend parses accumulated assistant text after each delta using `parseRepl
 The settings popover persists the toggle atomically while preserving other TOML values. Changing it stops the current chat process; the next user request reconnects with the new permission. When false Mellorin omits the flag (the CLI's existing settings still apply). The local task checkbox remains available independently.
 
 Synthetic CLI regression on 2026-11-15 confirmed Write/Edit inside the vault for `.mellorin/today.json`, `formats/english-reading.json` and `Learning/English/reading/process.md`; both a relative `../outside.txt` and absolute outside write were attempted and denied by the CLI. No personal vault or Claude settings were changed.
+||||||| parent of 1925930 (feat: add validated format change apply and rollback)
+
+### Stage 9 integration
+
+`src/changes/ChangePreview.tsx` exports the independent proposal UI; `src/changes/bridge.ts` owns the five `change_*` Tauri calls. `parseReply` now exposes optional `changes` alongside Stage 8 blocks. Render each proposal with `streaming={jery.streaming}` (use the existing active-response flag), route `onChange` to a user-initiated chat revision request, and use `onApplied` to refresh the lesson. `ChangeHistory` provides persisted rollback and explicit crash recovery across restarts. Key previews by response ID plus proposal index/content so a new proposal resets preview state. FormatScreen's existing five-second poll also reloads committed formats. See [jery-protocol.md](jery-protocol.md) for the exact contract and journal recovery behavior. The existing `learning_init` initialization also migrates Stage 8-only vault READMEs by appending Stage 9 once; this work does not change subprocess permissions.
