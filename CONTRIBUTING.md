@@ -4,7 +4,7 @@
 
 Requirements: Rust (stable), Node.js 20+, npm, and the [Tauri 2 platform prerequisites](https://tauri.app/start/prerequisites/). The Tauri CLI is a project development dependency.
 
-For native chat and translation, install and authenticate Claude Code CLI and configure a disposable synthetic vault as described in the [README quickstart](README.md#quickstart) before launching. Native startup is not yet verified.
+For native chat and translation, install and authenticate Claude Code CLI and configure a disposable synthetic vault as described in the [README quickstart](README.md#quickstart) before launching.
 
 ```bash
 npm ci
