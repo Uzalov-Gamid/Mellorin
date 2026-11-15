@@ -238,7 +238,7 @@ describe("Reading design interactions", () => {
     expect(elements(tree).some(e => e.props.className === "sentence sentence-selected")).toBe(true);
   });
   it("persists known status after adding the entry and handles unavailable speech", async () => {
-    runtime.invoke.mockImplementation((command: string) => Promise.resolve(command === "translate" ? "Привет" : undefined));
+    runtime.invoke.mockImplementation((command: string) => Promise.resolve(command === "translate" ? "Привет" : command === "vocab_add" ? "Learning/English/vocabulary/mywords-list.md" : undefined));
     const saved = vi.fn();
     const component = () => WordPopup({ word: "Hello", sentence: "Hello world.", onSaved: saved, onClose: vi.fn() });
     let tree = render(component); await flush(); tree = render(component);
@@ -248,7 +248,7 @@ describe("Reading design interactions", () => {
     tree = render(component);
     await find(tree, e => e.type === "button" && content(e).includes("Послушать")).props.onClick?.();
     expect(content(render(component))).toContain("Английский голос недоступен");
-    expect(content(render(component))).toContain("добавлено в vocabulary/mywords-list.md");
+    expect(content(render(component))).toContain("добавлено в Learning/English/vocabulary/mywords-list.md");
   });
 });
 

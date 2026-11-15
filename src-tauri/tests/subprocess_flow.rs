@@ -26,6 +26,7 @@ fn config(dir: &tempfile::TempDir, binary: String) -> Config {
         vault_path: dir.path().to_str().unwrap().into(),
         claude_path: binary,
         theme: "dark".into(),
+        text_size: 14,
         jery_can_edit_vault: true,
         jery_ticktick: config::TickTickMode::Full,
     }

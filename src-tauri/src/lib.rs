@@ -3,6 +3,7 @@ mod config;
 mod formats;
 mod learning;
 mod requests;
+mod settings;
 mod subprocess;
 mod ticktick;
 mod vault;
@@ -113,6 +114,12 @@ async fn today_set_done(
     .map_err(|e| e.to_string())
 }
 
+#[tauri::command]
+fn vocab_list(app: AppHandle) -> Result<Vec<vault::VocabularyEntry>, String> {
+    let config = Config::load(&app).map_err(|err| err.to_string())?;
+    vault::vocab_list(std::path::Path::new(&config.vault_path)).map_err(|err| err.to_string())
+}
+
 static VOCAB_WRITE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 #[tauri::command]
@@ -137,6 +144,38 @@ async fn explain_sentence(
 #[tauri::command]
 fn config_get(app: AppHandle) -> Result<Config, String> {
     Config::load(&app).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+async fn settings_save(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    preferences: settings::Preferences,
+) -> Result<(), String> {
+    use tauri::Manager;
+    preferences.validate().map_err(|err| err.to_string())?;
+    let old = Config::load(&app).map_err(|err| err.to_string())?;
+    if preferences
+        .changes_process(&old)
+        .map_err(|err| err.to_string())?
+    {
+        state
+            .subprocess
+            .stop()
+            .await
+            .map_err(|err| err.to_string())?;
+    }
+    preferences
+        .save(&app.path().app_config_dir().map_err(|err| err.to_string())?)
+        .map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+async fn settings_diagnostics(app: AppHandle) -> Result<settings::Diagnostics, String> {
+    let config = Config::load(&app).map_err(|err| err.to_string())?;
+    use tauri::Manager;
+    let directory = app.path().app_config_dir().map_err(|err| err.to_string())?;
+    Ok(settings::diagnostics(&config, directory.to_string_lossy().into()).await)
 }
 
 #[tauri::command]
@@ -207,10 +246,12 @@ fn vault_subjects(app: AppHandle) -> Result<Vec<vault::VaultSubject>, String> {
 }
 
 #[tauri::command]
-async fn vocab_add(app: AppHandle, word: String, sentence: String) -> Result<(), String> {
+async fn vocab_add(app: AppHandle, word: String, sentence: String) -> Result<String, String> {
     let config = Config::load(&app).map_err(|err| err.to_string())?;
     let _guard = VOCAB_WRITE_LOCK.lock().await;
     vault::vocab_add(std::path::Path::new(&config.vault_path), &word, &sentence)
+        .map_err(|err| err.to_string())?;
+    vault::vocabulary_source(std::path::Path::new(&config.vault_path))
         .map_err(|err| err.to_string())
 }
 
@@ -255,6 +296,8 @@ pub fn run() {
             change_rollback,
             change_recover,
             config_get,
+            settings_save,
+            settings_diagnostics,
             config_set_ticktick,
             ticktick_status,
             requests_snapshot,
@@ -267,6 +310,7 @@ pub fn run() {
             learning_snapshot,
             learning_init,
             today_set_done,
+            vocab_list,
             vocab_add,
             vocab_set_status,
             explain_sentence,
