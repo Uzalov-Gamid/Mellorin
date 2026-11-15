@@ -9,6 +9,8 @@
   --mint: #cfe3d6; --olive: #5d6a1c; --navy: #1e3a5f;
   --tan: #87562f; --night: #1c1513;
   --font: "SF Mono", ui-monospace, Menlo, monospace;
+  /* Gamid's terminal: SF Mono Bold as the base weight, Heavy for emphasis */
+  --fw: 700; --fw-strong: 800;
   --body-size: 14px; --caption-size: 11px; --caption-spacing: .1em;
   --space-1: 4px; --space-2: 8px; --space-3: 12px;
   --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px;

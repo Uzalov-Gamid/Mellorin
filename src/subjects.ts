@@ -3,10 +3,10 @@ export interface Skill { id: string; name: string }
 export interface Subject { id: string; name: string; letter: string; skills: Skill[] }
 const skills = (items: [string, string][]): Skill[] => items.map(([id, name]) => ({ id, name }));
 export const SUBJECTS: Subject[] = [
-  { id: "english", name: "English", letter: "E", skills: skills([["reading", "Чтение"], ["listening", "Аудирование"], ["words", "Слова"], ["speaking", "Говорение"], ["writing", "Письмо"], ["grammar", "Грамматика"], ["overview", "Обзор"]]) },
-  { id: "devops", name: "DevOps", letter: "D", skills: skills([["topic", "Тема"], ["pool", "Пул вопросов"], ["labs", "Лабы"], ["school", "Школа 21"], ["overview", "Обзор"]]) },
-  { id: "arabic", name: "Арабский", letter: "А", skills: skills([["words", "Чтение слов"], ["letters", "Буквы и семьи"], ["overview", "Обзор"]]) },
-  { id: "c", name: "C", letter: "C", skills: skills([["lesson", "Занятие"], ["plan", "Этапы"]]) },
+  { id: "english", name: "English", letter: "E", skills: skills([["reading", "Чтение"], ["listening", "Аудирование"], ["words", "Слова"], ["speaking", "Говорение"], ["writing", "Письмо"], ["grammar", "Грамматика"], ["notes", "Конспекты"], ["overview", "Обзор"]]) },
+  { id: "devops", name: "DevOps", letter: "D", skills: skills([["topic", "Тема"], ["pool", "Пул вопросов"], ["labs", "Лабы"], ["school", "Школа 21"], ["notes", "Конспекты"], ["overview", "Обзор"]]) },
+  { id: "arabic", name: "Арабский", letter: "А", skills: skills([["words", "Чтение слов"], ["letters", "Буквы и семьи"], ["notes", "Конспекты"], ["overview", "Обзор"]]) },
+  { id: "c", name: "C", letter: "C", skills: skills([["lesson", "Занятие"], ["plan", "Этапы"], ["notes", "Конспекты"]]) },
   { id: "sql", name: "SQL", letter: "S", skills: skills([["start", "Начало"]]) },
 ];
 const alias: Record<string, string> = { vocabulary: "words", school21: "school" };
