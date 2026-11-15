@@ -53,3 +53,12 @@ it('uses source practice flags and sends past source only on click', async () =>
   click('Past fixture'); expect(runtime.intent.mock.calls[0][1]).toEqual({ source: lesson.source });
   expect(runtime.read.mock.calls.map(c => c[0])).toEqual(['.mellorin/english-listening.json', lesson.source]);
 });
+
+it('resets native position and rate when a valid lesson is reloaded with the same audio URL', async () => {
+  render(); await flush();
+  const media = render().find(e => e.type === 'audio')!;
+  const native = { playbackRate: 1.5, readyState: 1, currentTime: 12, pause: vi.fn() };
+  (media as unknown as { ref: { current: unknown } }).ref.current = native;
+  click('Загрузить готовый урок'); render(); await flush();
+  expect(native.playbackRate).toBe(1); expect(native.currentTime).toBe(0); expect(native.pause).toHaveBeenCalled();
+});

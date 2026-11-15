@@ -405,7 +405,7 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 .listening-lesson textarea { font:inherit; color:var(--ink); background:var(--cream); border:1px solid var(--sand); border-radius:8px; padding:10px; min-height:65px; resize:vertical; }
 .listening-player { border:1px solid var(--dune); border-radius:12px; padding:16px 20px; display:flex; flex-direction:column; gap:12px; }
 .listening-player audio { width:100%; }
-.listening-player small { color:var(--ash); overflow-wrap:anywhere; }
+.listening-player small { color:var(--stone); overflow-wrap:anywhere; }
 .listening-lesson li { margin-bottom:12px; }
 .listening-script { border:1px dashed var(--dune); border-radius:12px; padding:22px 24px; min-height:220px; white-space:pre-wrap; overflow-wrap:anywhere; }
 .listening-script.locked { display:grid; place-items:center; color:var(--ash); }
