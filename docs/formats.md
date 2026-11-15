@@ -34,3 +34,5 @@ The context supplies current JERY message, optional data, explicit intent callba
 `format_seed` has no arguments: it creates only the bundled `formats/english-reading.json` if missing, and appends this contract once to `.mellorin/README.md`, preserving existing instructions. `format_request_block` accepts validated simple block/format names and a calendar date; it never overwrites a note. Both commands canonicalize parent directories inside the configured vault. Local vault writers must not adversarially swap directories during operations (same assumption as the read layer).
 
 `word-study` (no props) renders the English Words six-step session from validated `.mellorin/english-words.json`; see [English Words v1](english-words.md). No personal lesson data is shipped.
+
+`listening-lesson` (no props) renders English Listening's seven local steps from `.mellorin/english-listening.json`; see [English Listening v1](english-listening.md). Transcript and user-supplied audio are not shipped with the format.

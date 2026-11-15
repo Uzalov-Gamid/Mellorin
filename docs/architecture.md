@@ -83,3 +83,5 @@ Renderer requests retain the first example and deduplicate by date/block. A miss
 ## English Words (Stage 11, first screen)
 
 `formats/english-words.json` composes the reusable `word-study` block. The separately validated `.mellorin/english-words.json` is prepared by JERY only on user request and freezes when study starts. Cards and all four quiz rounds run locally. Only explicit preparation/result buttons send intents to JERY; only JERY decides and writes vocabulary statuses. Canonical and legacy vocabulary source paths are retained per word. See [English Words v1](english-words.md) for the exact bounded contract, prompts, refresh behavior and native review setup. The fixed seed creates both English formats without replacing custom files. Both screens remain mounted, preserving Reading state during navigation.
+
+English Listening uses its own seeded format and reusable `listening-lesson` block; see [English Listening v1](english-listening.md) for its bounded lesson schema and synthetic native fixture. Lesson reads and navigation never invoke a model. Explicit reload freezes a new validated lesson; native media controls load audio only through user playback.

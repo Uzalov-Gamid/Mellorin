@@ -220,6 +220,10 @@ pub fn init_protocol(vault: &Path, prompt: &str) -> anyhow::Result<()> {
         String::new()
     };
     let mut body = String::new();
+    if !existing.contains("# English Listening v1") {
+        body.push_str("\n\n");
+        body.push_str(include_str!("../../docs/english-listening.md"));
+    }
     if !existing.contains("# English Words v1") {
         body.push_str("\n\n");
         body.push_str(include_str!("../../docs/english-words.md"));
