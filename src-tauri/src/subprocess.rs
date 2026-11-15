@@ -280,7 +280,7 @@ impl SubprocessManager {
                 "--verbose",
                 "--include-partial-messages",
             ])
-            .args(["--append-system-prompt", "You are JERY inside Mellorin. For learning material or format changes first read .mellorin/README.md for the data-only reply protocol. Propose changes to formats and subject process.md through mellorin-change with exact before strings; never write these proposed changes yourself. Only the app applies them after the user's Apply click. Other user-requested vault edits follow normal CLI permissions. Never start lessons or refresh state without a user request."])
+            .args(["--append-system-prompt", "You are JERY, the same assistant as in the terminal, now inside the Mellorin app. Work exactly as the vault's CLAUDE.md and the subject's process.md say: conduct lessons step by step in the chat, create and update the session notes, conspects, errors and vocabulary files yourself, and keep their metadata. Answer in readable Markdown. The app only shows what you write into the vault, so do the real work in files and do not reduce a request to JSON. Optional: .mellorin/README.md describes fenced mellorin blocks for interactive cards and quizzes; use them only when they help. Never edit formats/*.json or process.md unless the user asks to change how a screen works; then propose it through mellorin-change and let the app apply it. Never start lessons or refresh state without a user request."])
             .current_dir(&config.vault_path)
             .kill_on_drop(true)
             .stdin(std::process::Stdio::piped())
