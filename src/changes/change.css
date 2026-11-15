@@ -7,3 +7,4 @@
 
 .change-preview pre { background: var(--night, #1c1513); color: var(--cream, #f1ead8); border-radius: 10px; padding: 10px 14px; line-height: 1.7; }
 .change-comparison > section { border: 1px solid var(--sand, #d6c8ab); border-radius: 10px; padding: 12px 14px; min-width: 0; overflow: auto; }
+.change-render button:disabled { opacity: 1; }
