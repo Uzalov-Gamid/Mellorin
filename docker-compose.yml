@@ -1,0 +1,21 @@
+services:
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/app
+      - cargo-cache:/usr/local/cargo/registry
+      - node-cache:/app/node_modules
+    ports:
+      - "1420:1420"
+    environment:
+      - RUST_LOG=info
+    # Tauri needs a display — use X11 forwarding or VNC in headless envs
+    # On macOS with XQuartz: set DISPLAY=host.docker.internal:0
+    # environment:
+    #   - DISPLAY=host.docker.internal:0
+
+volumes:
+  cargo-cache:
+  node-cache:
