@@ -228,7 +228,7 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 }
 
 .sidebar { flex-shrink: 0; width: 272px; background: var(--linen); border-right: 1px solid var(--sand); display: flex; flex-direction: column; padding: 14px 16px 18px; gap: 10px; overflow-y: auto; }
-.sidebar-collapsed { width: 72px; padding: 14px 0 16px; align-items: center; gap: 12px; }
+.sidebar-collapsed { width: 80px; padding: 14px 0 16px; align-items: center; gap: 12px; }
 .sidebar button { font: inherit; cursor: pointer; color: var(--stone); }
 .sidebar-window-reserve { height: 24px; flex-shrink: 0; width: 100%; }
 .sidebar-top { display: flex; align-items: center; gap: 12px; padding-bottom: 8px; width: 100%; }
