@@ -1,7 +1,9 @@
+mod attachments;
 mod changes;
 mod config;
 mod formats;
 mod learning;
+mod notes;
 mod requests;
 mod subprocess;
 mod ticktick;
@@ -14,6 +16,17 @@ use tauri::{AppHandle, Emitter, State};
 
 pub struct AppState {
     pub subprocess: Arc<SubprocessManager>,
+}
+
+#[tauri::command]
+fn notes_catalog(app: AppHandle) -> Result<notes::Catalog, String> {
+    let config = Config::load(&app).map_err(|_| "Не удалось прочитать настройки".to_string())?;
+    notes::catalog(std::path::Path::new(&config.vault_path)).map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn notes_attachment(app: AppHandle, path: String) -> Result<attachments::Attachment, String> {
+    let config = Config::load(&app).map_err(|_| "Не удалось прочитать настройки".to_string())?;
+    attachments::read(std::path::Path::new(&config.vault_path), &path).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -257,6 +270,8 @@ pub fn run() {
             subprocess: Arc::new(SubprocessManager::new()),
         })
         .invoke_handler(tauri::generate_handler![
+            notes_catalog,
+            notes_attachment,
             change_history,
             change_preview,
             change_apply,
