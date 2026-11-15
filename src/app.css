@@ -1,35 +1,11 @@
 /* Serika-inspired palette — matches Mellorin dashboard */
 :root {
-  --bg:      #f1ead8;
-  --bg2:     #fdf6ec;
-  --bgA:     #e6dcc6;
-  --bd:      #d8ccb0;
-  --bd2:     #c4b498;
-  --fg:      #2a1f1b;
-  --fg2:     #5a3c28;
-  --fgM:     #6e6155;
-  --ac:      #b4541b;
-  --acL:     rgba(180,84,27,.14);
-  --grn:     #2a6a3a;
-  --grnL:    rgba(42,106,58,.12);
-  --r:       7px;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:    #1e1810;
-    --bg2:   #261e14;
-    --bgA:   #302420;
-    --bd:    #3e2e24;
-    --bd2:   #5a4030;
-    --fg:    #f0dfc8;
-    --fg2:   #c09070;
-    --fgM:   #7a6050;
-    --ac:    #d87030;
-    --acL:   rgba(216,112,48,.15);
-    --grn:   #38a858;
-    --grnL:  rgba(56,168,88,.13);
-  }
+  color-scheme: dark;
+  --bg: #1e1810; --bg2: #261e14; --bgA: #302420;
+  --bd: #3e2e24; --bd2: #5a4030; --fg: #f0dfc8;
+  --fg2: #c09070; --fgM: #b59b87; --ac: #e68a50;
+  --acL: rgba(216,112,48,.15); --grn: #38a858;
+  --grnL: rgba(56,168,88,.13); --r: 7px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0 }
@@ -194,3 +170,17 @@ body {
   font-size: 12px; background: rgba(176,56,26,.12); color: #b03a1a;
   border: 1px solid rgba(176,56,26,.25); border-radius: 4px; padding: 2px 8px;
 }
+
+.settings-line { padding: 5px 16px; color: var(--fgM); font-size: 11px; overflow-wrap: anywhere; border-bottom: 1px solid var(--bd); }
+.tab-panel { height: 100%; min-height: 0; }
+.tab-panel[hidden] { display: none; }
+.word-wrap { display: inline; position: relative; }
+button.word { font: inherit; color: inherit; background: transparent; border: 0; }
+button.word-selected { background: var(--acL); }
+button.word-unknown { background: rgba(240,120,85,.18); border-bottom: 2px solid #f07855; }
+.word-popup { bottom: auto; top: 100%; left: 0; transform: none; align-items: stretch; white-space: normal; width: 240px; max-width: 75vw; font-size: 13px; line-height: 1.5; }
+.chat-error, [role="alert"] { color: #ffaaa0; padding: 6px 16px; overflow-wrap: anywhere; }
+.word-popup [role="alert"] { padding: 0; }
+button:disabled { cursor: default; opacity: .5; }
+button:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.vocab-word { color: #ffad8f; }
