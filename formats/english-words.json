@@ -1,0 +1,4 @@
+{
+  "version": 1,
+  "steps": [{ "id": "words", "title": "English › Слова", "blocks": [{ "type": "word-study", "props": {} }] }]
+}

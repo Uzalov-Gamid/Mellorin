@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "steps": [{"id": "reading", "title": "English › Чтение", "blocks": [
+    {"type": "text", "props": {"source": "reading", "sentenceNumbers": "after"}},
+    {"type": "phrase-breakdown", "props": {"source": "reading"}},
+    {"type": "word-card", "props": {"source": "reading"}}
+  ]}]
+}

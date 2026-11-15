@@ -1,0 +1,4 @@
+{
+  "version": 1,
+  "steps": [{ "id": "listening", "title": "English › Аудирование", "blocks": [{ "type": "listening-lesson", "props": {} }] }]
+}

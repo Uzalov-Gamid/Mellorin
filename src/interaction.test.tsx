@@ -37,11 +37,13 @@ vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn((event: string, callback
   return Promise.resolve(vi.fn());
 }) }));
 import { Chat } from "./Chat";
-import { TextViewer } from "./TextViewer";
+import { useJery } from "./useJery";
+import { useVaultState, type LearningSnapshot } from "./learning";
+import { WordPopup, TextViewer } from "./TextViewer";
 
 type Props = {
   children?: ReactNode; className?: string; disabled?: boolean;
-  onClick?: () => void | Promise<void>;
+  onClick?: (event?: { stopPropagation: () => void }) => void | Promise<void>;
   onChange?: (event: { target: { value: string } }) => void;
   onKeyDown?: (event: { key: string; shiftKey: boolean; nativeEvent: { isComposing: boolean }; preventDefault: () => void }) => void;
 };
@@ -130,7 +132,7 @@ describe("TextViewer IPC interactions", () => {
     tree = render(TextViewer);
     await find(tree, e => e.type === "button" && content(e) === "Читать →").props.onClick?.();
     tree = render(TextViewer);
-    await find(tree, e => e.type === "button" && content(e) === "Hello").props.onClick?.();
+    await find(tree, e => e.type === "button" && content(e) === "Hello").props.onClick?.({ stopPropagation: vi.fn() });
     tree = render(TextViewer);
     const popup = find(tree, e => typeof e.type === "function");
     const viewerSlots = runtime.slots;
@@ -163,7 +165,7 @@ describe("Word popup lifecycle", () => {
     tree = render(TextViewer);
     await find(tree, e => e.type === "button" && content(e) === "Читать →").props.onClick?.();
     tree = render(TextViewer);
-    await find(tree, e => e.type === "button" && content(e) === "Hello").props.onClick?.();
+    await find(tree, e => e.type === "button" && content(e) === "Hello").props.onClick?.({ stopPropagation: vi.fn() });
     const popup = find(render(TextViewer), e => typeof e.type === "function");
     runtime.slots = [];
     let resolveSave: () => void = () => {};
@@ -176,5 +178,168 @@ describe("Word popup lifecycle", () => {
     runtime.cleanups.splice(0).forEach(cleanup => cleanup());
     resolveSave(); await saving;
     expect(onSaved).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("JERY shell actions", () => {
+  it("connects once before sending a user initiated Today request", async () => {
+    let jery: ReturnType<typeof useJery>;
+    const Harness = () => { jery = useJery(); return <div />; };
+    render(Harness); await flush(); render(Harness);
+    await jery!.sendText("прочитай TickTick, что у меня сегодня");
+    expect(runtime.invoke.mock.calls.map(call => call[0])).toEqual(["subprocess_status", "subprocess_start", "subprocess_send"]);
+    render(Harness);
+    expect(jery!.messages[0].text).toBe("прочитай TickTick, что у меня сегодня");
+    runtime.listeners.get("chat-delta")?.({ payload: { text: "Сегодня" } });
+    runtime.listeners.get("chat-done")?.({ payload: {} });
+    render(Harness);
+    expect(jery!.messages[1].text).toBe("Сегодня");
+    expect(jery!.loading).toBe(false);
+  });
+  it("sends structured answer data while showing the user's intent in chat", async () => {
+    let jery: ReturnType<typeof useJery>;
+    const Harness = () => { jery = useJery(); return <div />; };
+    render(Harness); await flush(); render(Harness);
+    await jery!.sendText('Review result\nData: {"outcomes":[1,2]}', 'Review result');
+    expect(runtime.invoke).toHaveBeenCalledWith("subprocess_send", { message: 'Review result\nData: {"outcomes":[1,2]}' });
+    render(Harness);
+    expect(jery!.messages[0].text).toBe('Review result');
+  });
+  it("does not send or connect twice while connection is pending", async () => {
+    let jery: ReturnType<typeof useJery>;
+    const Harness = () => { jery = useJery(); return <div />; };
+    render(Harness); await flush(); render(Harness);
+    let connected: () => void = () => {};
+    runtime.invoke.mockImplementation((command: string) => command === "subprocess_start" ? new Promise<void>(resolve => { connected = resolve; }) : Promise.resolve());
+    const first = jery!.sendText("one");
+    await jery!.sendText("two"); connected(); await first;
+    expect(runtime.invoke.mock.calls.filter(call => call[0] === "subprocess_start")).toHaveLength(1);
+    expect(runtime.invoke.mock.calls.filter(call => call[0] === "subprocess_send")).toHaveLength(1);
+  });
+});
+
+
+describe("Reading design interactions", () => {
+  it("numbers sentences, keeps unknown progress neutral and requests a phrase breakdown", async () => {
+    runtime.invoke.mockImplementation(() => Promise.resolve({ phrases: [{ text: "Hello world", ru: "Привет мир" }] }));
+    let tree = render(TextViewer);
+    find(tree, e => e.type === "textarea").props.onChange?.({ target: { value: "Hello world. Next sentence!" } });
+    tree = render(TextViewer);
+    await find(tree, e => e.type === "button" && content(e) === "Читать →").props.onClick?.();
+    tree = render(TextViewer);
+    expect(content(tree)).toContain("уровень —");
+    expect(content(tree)).toContain("шаг — из 9");
+    expect(elements(tree).filter(e => e.type === "sup")).toHaveLength(2);
+    await find(tree, e => e.type === "button" && content(e) === "1").props.onClick?.();
+    render(TextViewer); await flush(); tree = render(TextViewer);
+    expect(runtime.invoke).toHaveBeenCalledWith("explain_sentence", { sentence: "Hello world." });
+    expect(content(tree)).toContain("Привет мир");
+    expect(elements(tree).some(e => e.props.className === "sentence sentence-selected")).toBe(true);
+  });
+  it("persists known status after adding the entry and handles unavailable speech", async () => {
+    runtime.invoke.mockImplementation((command: string) => Promise.resolve(command === "translate" ? "Привет" : command === "vocab_add" ? "Learning/English/vocabulary/mywords-list.md" : undefined));
+    const saved = vi.fn();
+    const component = () => WordPopup({ word: "Hello", sentence: "Hello world.", onSaved: saved, onClose: vi.fn() });
+    let tree = render(component); await flush(); tree = render(component);
+    await find(tree, e => e.type === "button" && content(e) === "known").props.onClick?.();
+    expect(runtime.invoke.mock.calls.slice(-2)).toEqual([["vocab_add", { word: "Hello", sentence: "Hello world." }], ["vocab_set_status", { word: "Hello", status: "known" }]]);
+    expect(saved).toHaveBeenCalledWith("known");
+    tree = render(component);
+    await find(tree, e => e.type === "button" && content(e).includes("Послушать")).props.onClick?.();
+    expect(content(render(component))).toContain("Английский голос недоступен");
+    expect(content(render(component))).toContain("добавлено в Learning/English/vocabulary/mywords-list.md");
+  });
+});
+
+describe("Reading failure handling", () => {
+  it("shows explanation failures without changing the reading text", async () => {
+    runtime.invoke.mockRejectedValue(new Error("invalid JSON"));
+    let tree = render(TextViewer);
+    find(tree, e => e.type === "textarea").props.onChange?.({ target: { value: "Keep this." } });
+    tree = render(TextViewer);
+    await find(tree, e => e.type === "button" && content(e) === "Читать →").props.onClick?.();
+    tree = render(TextViewer);
+    await find(tree, e => e.type === "button" && content(e) === "1").props.onClick?.();
+    render(TextViewer); await flush(); tree = render(TextViewer);
+    expect(content(tree)).toContain("Не удалось разобрать: Error: invalid JSON");
+    expect(content(tree)).toContain("Keep this.");
+    runtime.invoke.mockResolvedValue({ phrases: [{ text: "Keep this", ru: "Сохрани это" }] });
+    await find(tree, e => e.type === "button" && content(e) === "Повторить разбор").props.onClick?.();
+    render(TextViewer); await flush();
+    expect(content(render(TextViewer))).toContain("Сохрани это");
+  });
+  it("does not report a status saved when the status command fails", async () => {
+    runtime.invoke.mockImplementation((command: string) => command === "vocab_set_status" ? Promise.reject("write failed") : Promise.resolve("Привет"));
+    const saved = vi.fn();
+    const component = () => WordPopup({ word: "Hello", sentence: "Hello.", onSaved: saved, onClose: vi.fn() });
+    const tree = render(component);
+    await find(tree, e => e.type === "button" && content(e) === "focus").props.onClick?.();
+    expect(saved).not.toHaveBeenCalled();
+    expect(content(render(component))).toContain("Не удалось сохранить: write failed");
+  });
+  it("uses an available English voice for pronunciation", async () => {
+    const voice = { lang: "en-GB" };
+    const speak = vi.fn();
+    vi.stubGlobal("window", { speechSynthesis: { getVoices: () => [{ lang: "ru-RU" }, voice], cancel: vi.fn(), speak } });
+    vi.stubGlobal("SpeechSynthesisUtterance", class { text: string; constructor(text: string) { this.text = text; } });
+    try {
+      const tree = render(() => WordPopup({ word: "Hello", sentence: "Hello.", onSaved: vi.fn(), onClose: vi.fn() }));
+      await find(tree, e => e.type === "button" && content(e).includes("Послушать")).props.onClick?.();
+      expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: "Hello", lang: "en-GB", voice }));
+    } finally { vi.unstubAllGlobals(); }
+  });
+});
+
+
+describe("learning state polling", () => {
+  it("initializes instructions, refreshes files and disposes its timer", async () => {
+    let tick: () => void = () => {};
+    const clear = vi.fn();
+    vi.stubGlobal("window", { setInterval: (callback: () => void) => { tick = callback; return 42; }, clearInterval: clear });
+    let state: ReturnType<typeof useVaultState>;
+    let result: LearningSnapshot = { state: { version: 1, subjects: [] }, today: null, errors: [] as string[] };
+    runtime.invoke.mockImplementation((command: string) => Promise.resolve(command === "learning_snapshot" ? result : undefined));
+    const Harness = () => { state = useVaultState(); return <div />; };
+    try {
+      render(Harness); await flush(); render(Harness);
+      expect(runtime.invoke).toHaveBeenCalledWith("learning_init", { prompt: expect.stringContaining(".mellorin/state.json") });
+      expect(state!.snapshot.state?.subjects).toEqual([]);
+      expect(state!.loading).toBe(false);
+      result = { state: null, today: null, errors: ["invalid JSON"] };
+      tick(); await flush(); render(Harness);
+      expect(state!.snapshot.errors).toEqual(["invalid JSON"]);
+      runtime.cleanups.splice(0).forEach(cleanup => cleanup());
+      expect(clear).toHaveBeenCalledWith(42);
+    } finally { vi.unstubAllGlobals(); }
+  });
+});
+
+
+describe("JERY structured stream lifecycle", () => {
+  it("hides fragmented JSON, exposes validated material, and preserves it after completion", async () => {
+    const { useJery } = await import("./useJery");
+    let current: ReturnType<typeof useJery>;
+    const view = () => { current = useJery(); return <div />; };
+    render(view); await flush(); render(view);
+    await current!.sendText("demo");
+    const response = 'Hello\n```mellorin\n{"type":"quiz","props":{"question":"Demo","choices":["yes","no"],"answer":"yes"}}\n```\nReady';
+    for (const char of response) {
+      runtime.listeners.get("chat-delta")?.({ payload: { text: char } });
+      render(view);
+      expect(current!.messages[1].text).not.toContain('"type"');
+      expect(current!.messages[1].text).not.toContain('mellorin');
+    }
+    expect(current!.reply.blocks[0].type).toBe("quiz");
+    expect(current!.reply.text).toBe("Hello\nReady");
+    runtime.listeners.get("chat-done")?.({ payload: {} }); render(view);
+    expect(current!.loading).toBe(false);
+    expect(current!.reply.blocks).toHaveLength(1);
+    await current!.sendText("next"); render(view);
+    expect(current!.reply.blocks).toHaveLength(0);
+    runtime.listeners.get("chat-delta")?.({ payload: { text: '```mellorin\n{}' } });
+    runtime.listeners.get("chat-error")?.({ payload: { message: 'interrupted' } }); render(view);
+    expect(current!.reply.errors).toHaveLength(1);
+    expect(current!.messages[3].text).not.toContain('{}');
   });
 });

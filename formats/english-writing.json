@@ -1,0 +1,4 @@
+{
+  "version": 1,
+  "steps": [{ "id": "writing", "title": "English › Письмо", "blocks": [{ "type": "writing-study", "props": {} }] }]
+}
