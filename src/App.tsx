@@ -5,7 +5,7 @@ import { vaultSubjects } from "./subprocess";
 import { getConfig } from "./subprocess";
 import { useJery } from "./useJery";
 import { AppShell } from "./shell/AppShell";
-import { screens, screenFromHash, type ScreenId } from "./screens";
+import { screens, ScreenPanels, screenFromHash, type ScreenId } from "./screens";
 import { TODAY_PROMPT } from "./prompts";
 import "./app.css";
 
@@ -41,6 +41,7 @@ export default function App() {
       <button aria-label="Настройки" aria-expanded={settings} onClick={() => setSettings(value => !value)}>◐</button>
       {settings && <div className="settings-popover" role="dialog" aria-label="Настройки"><h2>Хранилище</h2><p>{vault}</p><button onClick={() => setSettings(false)}>Закрыть</button></div>}
     </>} />}>
-    {Screen ? <Screen /> : <section className="empty-screen"><h1>{screen === "home" ? "Главная" : `${selected?.name || screen.split("/")[0]} › ${skill?.name || screen.split("/")[1]}`}</h1><p>Данных для этого экрана пока нет. Начни разговор с JERY.</p></section>}
+    <ScreenPanels active={screen} />
+    {!Screen && <section className="empty-screen"><h1>{screen === "home" ? "Главная" : `${selected?.name || screen.split("/")[0]} › ${skill?.name || screen.split("/")[1]}`}</h1><p>Данных для этого экрана пока нет. Начни разговор с JERY.</p></section>}
   </AppShell>;
 }

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { JeryStrip } from "./JeryStrip";
 import type { Jery } from "../useJery";
-import { screenFromHash } from "../screens";
+import { ScreenPanels, screenFromHash } from "../screens";
 
 const jery: Jery = { messages: [{ role: "assistant", text: "Последний ответ" }], input: "", setInput: vi.fn(), running: false, ready: true, busy: false, loading: false, error: null, toggleConnection: vi.fn(), send: vi.fn(), sendText: vi.fn() };
 describe("shell", () => {
@@ -17,4 +17,10 @@ describe("shell", () => {
     expect(html).toContain('placeholder="Ответ голосом или текстом…"');
     expect(html).not.toContain('<input aria-label="Ответ JERY" placeholder="Ответ голосом или текстом…" disabled');
   });
+});
+
+it("keeps reading mounted while another subject is selected", () => {
+  const html = renderToStaticMarkup(<ScreenPanels active="devops/topic" />);
+  expect(html).toContain('class="tab-panel" hidden=""');
+  expect(html).toContain('aria-label="Текст для чтения"');
 });
