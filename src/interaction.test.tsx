@@ -197,6 +197,15 @@ describe("JERY shell actions", () => {
     expect(jery!.messages[1].text).toBe("Сегодня");
     expect(jery!.loading).toBe(false);
   });
+  it("sends structured answer data while showing the user's intent in chat", async () => {
+    let jery: ReturnType<typeof useJery>;
+    const Harness = () => { jery = useJery(); return <div />; };
+    render(Harness); await flush(); render(Harness);
+    await jery!.sendText('Review result\nData: {"outcomes":[1,2]}', 'Review result');
+    expect(runtime.invoke).toHaveBeenCalledWith("subprocess_send", { message: 'Review result\nData: {"outcomes":[1,2]}' });
+    render(Harness);
+    expect(jery!.messages[0].text).toBe('Review result');
+  });
   it("does not send or connect twice while connection is pending", async () => {
     let jery: ReturnType<typeof useJery>;
     const Harness = () => { jery = useJery(); return <div />; };
