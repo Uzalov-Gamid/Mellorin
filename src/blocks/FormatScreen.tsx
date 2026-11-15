@@ -47,7 +47,7 @@ export function FormatScreen({ subject = 'english', skill = 'reading' }: { subje
       const key = `${path}:${block.type}`;
       if (requested.current.has(key)) continue;
       requested.current.add(key);
-      void invoke('format_request_block', { date: localDate(), block: block.type, format: `${subject}-${skill}` }).catch(reason => {
+      void invoke('format_request_block', { date: localDate(), block: block.type, format: `${subject}-${skill}`, example: JSON.stringify(block, null, 2) }).catch(reason => {
         if (active) setRequestError(`Не удалось записать запрос блока ${block.type}: ${String(reason)}`);
       });
     }

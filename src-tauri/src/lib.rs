@@ -2,6 +2,7 @@ mod changes;
 mod config;
 mod formats;
 mod learning;
+mod requests;
 mod subprocess;
 mod vault;
 
@@ -12,6 +13,12 @@ use tauri::{AppHandle, Emitter, State};
 
 pub struct AppState {
     pub subprocess: Arc<SubprocessManager>,
+}
+
+#[tauri::command]
+fn requests_snapshot(app: AppHandle) -> Result<requests::Snapshot, String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    requests::snapshot(std::path::Path::new(&config.vault_path)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -51,6 +58,7 @@ fn format_request_block(
     date: String,
     block: String,
     format: String,
+    example: Option<String>,
 ) -> Result<(), String> {
     let config = Config::load(&app).map_err(|e| e.to_string())?;
     formats::request(
@@ -58,6 +66,7 @@ fn format_request_block(
         &date,
         &block,
         &format,
+        example.as_deref(),
     )
     .map_err(|e| e.to_string())
 }
@@ -225,6 +234,7 @@ pub fn run() {
             change_rollback,
             change_recover,
             config_get,
+            requests_snapshot,
             config_set_edit_permission,
             format_seed,
             format_request_block,
