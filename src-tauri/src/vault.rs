@@ -173,3 +173,96 @@ fn replace_file(path: &Path, contents: &[u8]) -> anyhow::Result<()> {
     }
     result
 }
+
+pub const MAX_TEXT_BYTES: u64 = 2 * 1024 * 1024;
+
+pub fn resolve_inside(vault: &Path, relative: &str) -> anyhow::Result<std::path::PathBuf> {
+    use std::path::Component;
+    let path = Path::new(relative);
+    anyhow::ensure!(
+        path.components()
+            .all(|part| matches!(part, Component::Normal(_))),
+        "path must be relative without traversal"
+    );
+    let root = vault.canonicalize()?;
+    let resolved = root.join(path).canonicalize()?;
+    anyhow::ensure!(resolved.starts_with(&root), "path leaves vault");
+    Ok(resolved)
+}
+
+pub fn read_text(vault: &Path, relative: &str) -> anyhow::Result<String> {
+    use std::io::Read;
+    let path = resolve_inside(vault, relative)?;
+    anyhow::ensure!(std::fs::metadata(&path)?.is_file(), "not a regular file");
+    let file = std::fs::File::open(path)?;
+    anyhow::ensure!(
+        file.metadata()?.len() <= MAX_TEXT_BYTES,
+        "text exceeds 2 MiB limit"
+    );
+    let mut bytes = Vec::new();
+    file.take(MAX_TEXT_BYTES + 1).read_to_end(&mut bytes)?;
+    anyhow::ensure!(
+        bytes.len() as u64 <= MAX_TEXT_BYTES,
+        "text exceeds 2 MiB limit"
+    );
+    Ok(String::from_utf8(bytes)?)
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct VaultEntry {
+    pub name: String,
+    pub is_dir: bool,
+}
+
+pub fn list(vault: &Path, relative: &str) -> anyhow::Result<Vec<VaultEntry>> {
+    let root = vault.canonicalize()?;
+    let directory = resolve_inside(vault, relative)?;
+    let mut entries = Vec::new();
+    for entry in std::fs::read_dir(directory)? {
+        let entry = entry?;
+        let canonical = entry.path().canonicalize()?;
+        anyhow::ensure!(
+            canonical.starts_with(&root),
+            "directory contains link leaving vault"
+        );
+        entries.push(VaultEntry {
+            name: entry.file_name().to_string_lossy().into_owned(),
+            is_dir: canonical.is_dir(),
+        });
+        anyhow::ensure!(entries.len() <= 10000, "directory exceeds 10000 entries");
+    }
+    entries.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(entries)
+}
+
+#[cfg(test)]
+mod read_tests {
+    use super::*;
+    #[test]
+    fn bounded_reads_and_lists_reject_traversal() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("demo.md"), "synthetic").unwrap();
+        assert_eq!(read_text(dir.path(), "demo.md").unwrap(), "synthetic");
+        assert_eq!(list(dir.path(), "").unwrap()[0].name, "demo.md");
+        for path in ["../demo.md", "/tmp/demo.md", "a/../demo.md", "./demo.md"] {
+            assert!(read_text(dir.path(), path).is_err());
+        }
+        std::fs::write(
+            dir.path().join("large"),
+            vec![b'a'; MAX_TEXT_BYTES as usize + 1],
+        )
+        .unwrap();
+        assert!(read_text(dir.path(), "large").is_err());
+    }
+    #[cfg(unix)]
+    #[test]
+    fn external_symlinks_are_rejected() {
+        let dir = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        std::fs::write(outside.path().join("private"), "synthetic outside").unwrap();
+        std::os::unix::fs::symlink(outside.path(), dir.path().join("link")).unwrap();
+        assert!(read_text(dir.path(), "link/private").is_err());
+        assert!(list(dir.path(), "link").is_err());
+        assert!(list(dir.path(), "").is_err());
+    }
+}
