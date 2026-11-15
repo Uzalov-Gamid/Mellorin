@@ -1,3 +1,4 @@
+mod changes;
 mod config;
 mod formats;
 mod learning;
@@ -11,6 +12,32 @@ use tauri::{AppHandle, Emitter, State};
 
 pub struct AppState {
     pub subprocess: Arc<SubprocessManager>,
+}
+
+#[tauri::command]
+fn change_history(app: AppHandle) -> Result<Vec<changes::Record>, String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    changes::list(std::path::Path::new(&config.vault_path)).map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn change_preview(app: AppHandle, proposal: changes::Proposal) -> Result<changes::Preview, String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    changes::preview(std::path::Path::new(&config.vault_path), proposal).map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn change_apply(app: AppHandle, proposal: changes::Proposal) -> Result<changes::Record, String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    changes::apply(std::path::Path::new(&config.vault_path), proposal).map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn change_rollback(app: AppHandle, id: String) -> Result<changes::Record, String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    changes::rollback(std::path::Path::new(&config.vault_path), &id).map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn change_recover(app: AppHandle) -> Result<(), String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    changes::recover(std::path::Path::new(&config.vault_path)).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -178,6 +205,11 @@ pub fn run() {
             subprocess: Arc::new(SubprocessManager::new()),
         })
         .invoke_handler(tauri::generate_handler![
+            change_history,
+            change_preview,
+            change_apply,
+            change_rollback,
+            change_recover,
             config_get,
             format_seed,
             format_request_block,
