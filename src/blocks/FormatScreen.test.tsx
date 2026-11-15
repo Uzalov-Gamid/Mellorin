@@ -41,7 +41,7 @@ it('polls layout without losing pasted reading, selected sentence or selected wo
   expect(elements(ReadingText(context.reading, false)).some(e => e.type === WordPopup)).toBe(false);
   expect(ReadingWord(context.reading)?.type).toBe(WordPopup);
   source = JSON.stringify({ version: 1, steps: [{ id: 'reading', title: 'Updated', blocks: [...builtin.steps[0].blocks, { type: 'future-block', props: {} }, { type: 'future-block', props: {} }] }] });
-  vi.advanceTimersByTime(5000); await flush(); render(); await flush();
+  window.dispatchEvent(new Event('mellorin-format-changed')); await flush(); render(); await flush();
   tree = render(); context = tree.props.value;
   expect(context.reading.text).toBe('Hello world.'); expect(context.reading.editing).toBe(false); expect(context.reading.selected).toBe(0); expect(context.reading.popup).not.toBeNull();
   expect(elements(tree).filter(e => e.type === BlockView)).toHaveLength(5);
