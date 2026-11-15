@@ -2,10 +2,10 @@
 
 ## Setup
 
-Requirements: Rust (stable), Node.js 20+, pnpm, Tauri CLI.
+Requirements: Rust (stable), Node.js 20+, Tauri CLI.
 
 ```bash
-pnpm install
+npm install
 cargo tauri dev
 ```
 
@@ -30,5 +30,5 @@ GitHub Actions runs on every PR to `develop` and `main`:
 - `cargo fmt --check`
 - `cargo clippy`
 - `cargo test`
-- `pnpm typecheck`
-- `pnpm test`
+- `npm run typecheck`
+- `npm run test`
