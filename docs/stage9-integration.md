@@ -1,17 +1,7 @@
-# Stage 9 integration handoff
+# Format change controls
 
-Implemented independently of Stage 9a. Reserved App, subprocess, and config files were not modified.
+JERY replies may carry a validated `mellorin-change` proposal. The app shows rendered previews and exact format/process diffs. Apply is a user action; requesting a revision only sends a chat message. Formats refresh immediately after a successful operation, while preserving reading state.
 
-Root wiring:
+The history button exposes persisted rollback and interrupted-operation recovery. Both reject concurrent edits. Two files are replaced separately using atomic renames and a durable journal; a pending operation blocks new changes until the user recovers it. Recovery refuses conflicts and retains the journal for inspection. Existing file permissions are preserved, new files use private permissions, and previous format JSON is retained separately from transaction metadata.
 
-1. Read `parseReply(...).changes ?? []` from the current assistant response. Keep the parsed proposal objects stable between renders, or key previews by response ID plus serialized proposal.
-2. Render `ChangePreview` from `src/changes/ChangePreview.tsx` for each proposal. Pass the active response flag as `streaming`.
-3. Supply `onChange(proposal)` to initiate the user's revision request through the existing JERY hook. This callback must not apply anything.
-4. Supply `onApplied(record)` to refresh/reload the active format immediately and increment a history revision. Existing FormatScreen polling reloads within five seconds as a fallback.
-5. Mount `ChangeHistory` from `src/changes/ChangeHistory.tsx` with that revision and the same refresh callback. Its recovery and rollback controls work after restart.
-
-Rust command registration is already included in lib.rs. `learning_init` appends the Stage 9 protocol to existing Stage 8 vault READMEs once. No permissions/settings integration is included.
-
-Verification: frontend typecheck and 69 Vitest tests; Rust formatting, Clippy with warnings denied, 43 Rust tests pass; one existing live-Claude integration test remains ignored. No native application build, live Claude run, PR, or real-vault writes were performed, as requested. Root should run the integrated UI flow after wiring.
-
-Transactions are recoverable across two atomic file replacements, rather than claiming an impossible atomic rename of two files. A durable pending journal blocks subsequent changes until explicitly recovered. Recovery refuses external edits; it never blindly restores over them. Filesystem replacement races by external processes are outside the in-process mutex; see protocol notes.
+The path checks and in-process mutex assume the vault is not adversarially rewritten during filesystem operations. They do not provide an OS sandbox against an external process racing a rename.

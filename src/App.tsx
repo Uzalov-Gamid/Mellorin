@@ -1,3 +1,4 @@
+import { JeryChanges } from "./changes/JeryChanges";
 import { JeryBlocks } from "./blocks/JeryBlocks";
 import { useEffect, useState } from "react";
 import { Sidebar } from "./shell/Sidebar";
@@ -56,6 +57,7 @@ export default function App() {
       {settings && <VaultSettings onClose={() => setSettings(false)} />}
     </>} />}>
     <JeryBlocks jery={jery} />
+    <JeryChanges jery={jery} />
     {taskError && <p role="alert">{taskError}</p>}
     <JeryFormatContext.Provider value={{ message: jery.messages.filter(message => message.role === "assistant").slice(-1)[0]?.text || "", data: null, intent: (intent, value) => { setExpanded(true); void jery.sendText(`${intent}\nДанные ответа: ${JSON.stringify(value)}`); } }}><ScreenPanels active={screen} /></JeryFormatContext.Provider>
     {screen === "home" && <StateHome snapshot={snapshot} subjects={subjects} busy={taskBusy || !jery.ready || jery.busy || jery.loading} onStart={startTask} onToggle={toggleTask} loading={loading} onRefresh={() => { setExpanded(true); void jery.sendText(REFRESH_PROMPT); }} />}

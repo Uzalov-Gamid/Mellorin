@@ -25,7 +25,7 @@ export function BlockView({ block }: { block: Block }) {
     return () => clearInterval(timer);
   }, [running, seconds]);
   let content;
-  if (p.source === 'reading' && block.type === 'text') content = ReadingText(context.reading, false);
+  if (p.source === 'reading' && block.type === 'text') content = ReadingText(context.reading, false, p.sentenceNumbers !== false && p.sentenceNumbers !== 'none');
   else if (p.source === 'reading' && block.type === 'phrase-breakdown') content = ReadingPhrases(context.reading);
   else if (p.source === 'reading' && block.type === 'word-card') content = ReadingWord(context.reading);
   else switch (block.type) {

@@ -78,7 +78,7 @@ export function useReading() {
   return { text, setText, editing, setEditing, unknown, setUnknown, statuses, setStatuses, popup, setPopup, selected, setSelected, explanation, phraseError, setPhraseAttempt, sentences };
 }
 export type Reading = ReturnType<typeof useReading>;
-export function ReadingText(r: Reading, inlineWord = true) {
+export function ReadingText(r: Reading, inlineWord = true, sentenceNumbers = true) {
   const { text, setText, editing, setEditing, unknown, setUnknown, statuses, setStatuses, popup, setPopup, selected, setSelected, sentences } = r;
   if (editing) return <div className="viewer">
     <div className="viewer-header"><span className="viewer-title">Чтение текста</span></div>
@@ -107,7 +107,7 @@ export function ReadingText(r: Reading, inlineWord = true) {
             setUnknown(previous => status === "known" ? previous.filter(word => word !== token.toLowerCase()) : previous.includes(token.toLowerCase()) ? previous : [...previous, token.toLowerCase()]);
           }} />}
         </span>;
-      })}</span><sup><button aria-label={`Разобрать предложение ${sentenceIndex + 1}`} aria-pressed={selected === sentenceIndex} onClick={() => setSelected(sentenceIndex)}>{sentenceIndex + 1}</button></sup>{" "}
+      })}</span><sup><button aria-label={`Разобрать предложение ${sentenceIndex + 1}`} aria-pressed={selected === sentenceIndex} onClick={() => setSelected(sentenceIndex)}>{sentenceNumbers ? sentenceIndex + 1 : '▸'}</button></sup>{" "}
     </span>)}</div>
     </article>
     {unknown.length > 0 && <div className="vocab-panel"><div className="vocab-title">Незнакомые слова</div><div className="vocab-list">

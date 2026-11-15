@@ -35,8 +35,10 @@ export function FormatScreen({ subject = 'english', skill = 'reading' }: { subje
       }
       if (active) await refresh();
     })();
+    const changed = () => { void refresh(); };
+    window.addEventListener('mellorin-format-changed', changed);
     const timer = setInterval(() => { void refresh(); }, 5000);
-    return () => { active = false; clearInterval(timer); };
+    return () => { active = false; clearInterval(timer); window.removeEventListener('mellorin-format-changed', changed); };
   }, [path, subject, skill]);
   useEffect(() => {
     let active = true;

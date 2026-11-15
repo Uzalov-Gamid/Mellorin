@@ -480,6 +480,42 @@ mod tests {
     }
     #[cfg(unix)]
     #[test]
+    fn replacements_preserve_permissions_and_snapshots_are_private() {
+        use std::os::unix::fs::{MetadataExt, PermissionsExt};
+        let (d, p) = fixture();
+        fs::set_permissions(d.path().join(&p.target), fs::Permissions::from_mode(0o640)).unwrap();
+        fs::set_permissions(d.path().join(&p.process), fs::Permissions::from_mode(0o600)).unwrap();
+        let record = apply(d.path(), p.clone()).unwrap();
+        assert_eq!(
+            fs::metadata(d.path().join(&p.target)).unwrap().mode() & 0o777,
+            0o640
+        );
+        assert_eq!(
+            fs::metadata(d.path().join(&p.process)).unwrap().mode() & 0o777,
+            0o600
+        );
+        let snapshot = fs::read_dir(d.path().join("formats/.history"))
+            .unwrap()
+            .filter_map(Result::ok)
+            .find(|e| {
+                e.file_name()
+                    .to_string_lossy()
+                    .starts_with("english-reading.")
+            })
+            .unwrap();
+        assert_eq!(
+            fs::read_to_string(snapshot.path()).unwrap(),
+            p.before.unwrap()
+        );
+        assert_eq!(snapshot.metadata().unwrap().mode() & 0o777, 0o600);
+        rollback(d.path(), &record.id).unwrap();
+        assert_eq!(
+            fs::metadata(d.path().join(&p.target)).unwrap().mode() & 0o777,
+            0o640
+        );
+    }
+    #[cfg(unix)]
+    #[test]
     fn rejects_symlink_targets_and_history() {
         let (d, p) = fixture();
         let out = tempfile::tempdir().unwrap();

@@ -7,7 +7,9 @@ import { BlockView } from '../blocks';
 import { BlockContext } from '../blocks/context';
 import { useReading } from '../TextViewer';
 function VisualFormat({ source }: { source: string | null }) {
-  const reading = useReading();
+  const state = useReading();
+  const sample = 'Birds sing. We walk along the river.';
+  const reading = { ...state, text: sample, editing: false, sentences: sample.split(/(?<=[.!?])\s+/) }; 
   if (source === null) return <p>Файл отсутствует</p>;
   const format = parseFormat(source);
   return <BlockContext.Provider value={{ reading, message: 'Пример предложения. Следующее предложение.', data: null, intent: () => {} }}><fieldset disabled className="change-render">{format.steps.map(step => <section key={step.id}><h4>{step.title}</h4>{step.blocks.map((block, i) => <BlockView key={i} block={block} />)}</section>)}</fieldset></BlockContext.Provider>;
