@@ -1,0 +1,16 @@
+:root {
+  color-scheme: light;
+  --cream: #f1ead8; --paper: #f8f1e3; --linen: #e6dcc6;
+  --sand: #d6c8ab; --dune: #c9b99c; --ink: #2a1f1b;
+  --espresso: #3b2c26; --stone: #6e6155; --ash: #8f8276;
+  --ember: #b4541b; --flame: #e08a4c; --peach: #f0c9a0;
+  --rust: #b0381a; --mustard: #765500; --brass: #c49a3a;
+  --butter: #f2dc8f; --emerald: #1f6b5c; --pine: #134b40;
+  --mint: #cfe3d6; --olive: #5d6a1c; --navy: #1e3a5f;
+  --tan: #87562f; --night: #1c1513;
+  --font: "SF Mono", ui-monospace, Menlo, monospace;
+  --body-size: 14px; --caption-size: 11px; --caption-spacing: .1em;
+  --space-1: 4px; --space-2: 8px; --space-3: 12px;
+  --space-4: 16px; --space-5: 20px; --space-6: 24px; --space-8: 32px;
+  --radius: 8px; --radius-card: 12px;
+}
