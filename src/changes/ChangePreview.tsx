@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { exactDiff, type ChangeProposal } from './proposal';
-import { applyChange, previewChange, recoverChange, rollbackChange, type ChangePreviewData, type ChangeRecord } from './bridge';
+import { applyChange, previewChange, rollbackChange, type ChangePreviewData, type ChangeRecord } from './bridge';
 import './change.css';
 import { parseFormat } from '../blocks/schema';
 import { BlockView } from '../blocks';
@@ -30,9 +30,9 @@ export function ChangePreview({ proposal, streaming = false, onChange, onApplied
     <h3>Точные изменения файлов</h3><pre>{exactDiff(proposal.before, proposal.after, proposal.target)}</pre>
     {preview && <pre>{exactDiff(proposal.process_before, preview.process_after, proposal.process)}</pre>}
     {error && <p role="alert">{error}</p>}
-    {record ? <><p role="status">Сохранено · {record.id}</p><button disabled={busy || streaming} onClick={() => void action(() => rollbackChange(record.id))}>Откатить</button></> : <>
-      <button disabled={!preview || busy || streaming} onClick={() => void action(() => applyChange(proposal))}>Применить</button>
-      <button disabled={busy || streaming} onClick={() => onChange(proposal)}>Изменить</button></>}
-    {error && <button disabled={busy || streaming} onClick={() => void action(async () => { await recoverChange(); setPreview(await previewChange(proposal)); })}>Восстановить прерванное изменение</button>}
+    {record ? <><p role="status">Сохранено · {record.id}</p><button className="btn-sm" disabled={busy || streaming} onClick={() => void action(() => rollbackChange(record.id))}>Откатить</button></> : <>
+      <button className="btn-primary" disabled={!preview || busy || streaming} onClick={() => void action(() => applyChange(proposal))}>Применить</button>
+      <button className="btn-sm" disabled={busy || streaming} onClick={() => onChange(proposal)}>Изменить</button></>}
+    {error && <button className="btn-sm" disabled={busy || streaming} onClick={() => void action(async () => { setPreview(await previewChange(proposal)); })}>Проверить ещё раз</button>}
   </section>;
 }

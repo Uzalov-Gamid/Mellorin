@@ -4,3 +4,6 @@
 .change-preview button { margin-right: 12px; }
 @media (max-width: 700px) { .change-comparison { grid-template-columns: 1fr; } }
 .change-render { border: 0; margin: 0; padding: 0; pointer-events: none; }
+
+.change-preview pre { background: var(--night, #1c1513); color: var(--cream, #f1ead8); border-radius: 10px; padding: 10px 14px; line-height: 1.7; }
+.change-comparison > section { border: 1px solid var(--sand, #d6c8ab); border-radius: 10px; padding: 12px 14px; min-width: 0; overflow: auto; }
