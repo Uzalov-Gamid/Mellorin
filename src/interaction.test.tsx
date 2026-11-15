@@ -305,3 +305,32 @@ describe("learning state polling", () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+
+describe("JERY structured stream lifecycle", () => {
+  it("hides fragmented JSON, exposes validated material, and preserves it after completion", async () => {
+    const { useJery } = await import("./useJery");
+    let current: ReturnType<typeof useJery>;
+    const view = () => { current = useJery(); return <div />; };
+    render(view); await flush(); render(view);
+    await current!.sendText("demo");
+    const response = 'Hello\n```mellorin\n{"type":"quiz","props":{"question":"Demo","choices":["yes","no"],"answer":"yes"}}\n```\nReady';
+    for (const char of response) {
+      runtime.listeners.get("chat-delta")?.({ payload: { text: char } });
+      render(view);
+      expect(current!.messages[1].text).not.toContain('"type"');
+      expect(current!.messages[1].text).not.toContain('mellorin');
+    }
+    expect(current!.reply.blocks[0].type).toBe("quiz");
+    expect(current!.reply.text).toBe("Hello\nReady");
+    runtime.listeners.get("chat-done")?.({ payload: {} }); render(view);
+    expect(current!.loading).toBe(false);
+    expect(current!.reply.blocks).toHaveLength(1);
+    await current!.sendText("next"); render(view);
+    expect(current!.reply.blocks).toHaveLength(0);
+    runtime.listeners.get("chat-delta")?.({ payload: { text: '```mellorin\n{}' } });
+    runtime.listeners.get("chat-error")?.({ payload: { message: 'interrupted' } }); render(view);
+    expect(current!.reply.errors).toHaveLength(1);
+    expect(current!.messages[3].text).not.toContain('{}');
+  });
+});

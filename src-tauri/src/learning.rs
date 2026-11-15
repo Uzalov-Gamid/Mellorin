@@ -214,13 +214,22 @@ pub fn init_protocol(vault: &Path, prompt: &str) -> anyhow::Result<()> {
     let directory = vault::resolve_inside(&root, ".mellorin")?;
     let path = directory.join("README.md");
     let exists = path.exists();
-    if exists {
-        let existing = vault::read_text(&root, ".mellorin/README.md")?;
-        if existing.contains("# Mellorin state protocol v1") {
-            return Ok(());
-        }
+    let existing = if exists {
+        vault::read_text(&root, ".mellorin/README.md")?
+    } else {
+        String::new()
+    };
+    let mut body = String::new();
+    if !existing.contains("# Mellorin state protocol v1") {
+        body.push_str(&format!("# Mellorin state protocol v1\n\nUse lowercase folder subject ids (english, devops, arabic, c, sql); skill ids match the sidebar. Only refresh on a user request. Never invent data; omit unavailable values. Keep the vault Markdown notes as the source. Write UTF-8 JSON using a temporary file and rename.\n\nExact refresh prompt:\n\n{prompt}\n\nstate.json schema:\n```json\n{}\n```\n\ntoday.json schema:\n```json\n{}\n```\n", include_str!("../../docs/state.schema.json"), include_str!("../../docs/today.schema.json")));
     }
-    let body = format!("# Mellorin state protocol v1\n\nUse lowercase folder subject ids (english, devops, arabic, c, sql); skill ids match the sidebar. Only refresh on a user request. Never invent data; omit unavailable values. Keep the vault Markdown notes as the source. Write UTF-8 JSON using a temporary file and rename.\n\nExact refresh prompt:\n\n{prompt}\n\nstate.json schema:\n```json\n{}\n```\n\ntoday.json schema:\n```json\n{}\n```\n", include_str!("../../docs/state.schema.json"), include_str!("../../docs/today.schema.json"));
+    if !existing.contains("# Mellorin reply protocol v1") {
+        body.push_str("\n\n");
+        body.push_str(include_str!("../../docs/jery-protocol.md"));
+    }
+    if body.is_empty() {
+        return Ok(());
+    }
     let mut options = std::fs::OpenOptions::new();
     options.write(true);
     if exists {
@@ -292,6 +301,22 @@ mod tests {
         assert!(validate(invalid, false).is_err());
         std::fs::write(dir.path().join(".mellorin/state.json"), "{invalid").unwrap();
         assert_eq!(snapshot(dir.path()).errors.len(), 1);
+    }
+    #[test]
+    fn appends_reply_protocol_to_existing_state_instructions_once() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::create_dir(dir.path().join(".mellorin")).unwrap();
+        let path = dir.path().join(".mellorin/README.md");
+        std::fs::write(
+            &path,
+            "Custom rules\n# Mellorin state protocol v1\nOld state rules",
+        )
+        .unwrap();
+        init_protocol(dir.path(), "refresh").unwrap();
+        init_protocol(dir.path(), "refresh").unwrap();
+        let text = std::fs::read_to_string(path).unwrap();
+        assert!(text.starts_with("Custom rules\n# Mellorin state protocol v1\nOld state rules"));
+        assert_eq!(text.matches("# Mellorin reply protocol v1").count(), 1);
     }
     #[test]
     fn validates_today_dates_tasks_and_duplicates() {

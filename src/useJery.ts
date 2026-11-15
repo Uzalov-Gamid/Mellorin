@@ -1,3 +1,4 @@
+import { parseReply } from "./blocks/protocol";
 import { useEffect, useRef, useState } from "react";
 import { getStatus, onChatDelta, onChatDone, onChatError, onExit, sendMessage, startSubprocess, stopSubprocess } from "./subprocess";
 
@@ -85,6 +86,11 @@ export function useJery() {
     } catch (reason) { setError(String(reason)); pending.current = false; setLoading(false); }
     finally { sending.current = false; setBusy(false); }
   }
-  return { messages, input, setInput, running, ready, busy, loading, error, toggleConnection, send, sendText };
+  const lastAssistant = messages.map(message => message.role).lastIndexOf("assistant");
+  const reply = parseReply(messages[lastAssistant]?.text || "", loading);
+  const visibleMessages = messages.map((message, index) => message.role === "assistant"
+    ? { ...message, text: parseReply(message.text, loading && index === lastAssistant).text || "Материал в области урока" }
+    : message);
+  return { messages: visibleMessages, reply, input, setInput, running, ready, busy, loading, error, toggleConnection, send, sendText };
 }
 export type Jery = ReturnType<typeof useJery>;
