@@ -53,6 +53,10 @@ pub fn seed(vault: &Path) -> anyhow::Result<()> {
         &formats.join("english-words.json"),
         include_str!("../../formats/english-words.json"),
     )?;
+    create_once(
+        &formats.join("english-listening.json"),
+        include_str!("../../formats/english-listening.json"),
+    )?;
     let parent = directory(vault, ".mellorin")?;
     let readme = parent.join("README.md");
     const MARKER: &str = "# Mellorin format v1";
@@ -142,6 +146,21 @@ mod tests {
         )
         .unwrap();
         seed(dir.path()).unwrap();
+        assert!(
+            vault::read_text(dir.path(), "formats/english-listening.json")
+                .unwrap()
+                .contains("listening-lesson")
+        );
+        std::fs::write(
+            dir.path().join("formats/english-listening.json"),
+            "custom listening",
+        )
+        .unwrap();
+        seed(dir.path()).unwrap();
+        assert_eq!(
+            vault::read_text(dir.path(), "formats/english-listening.json").unwrap(),
+            "custom listening"
+        );
         assert!(vault::read_text(dir.path(), "formats/english-words.json")
             .unwrap()
             .contains("word-study"));
