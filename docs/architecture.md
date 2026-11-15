@@ -19,7 +19,7 @@ The stdout parser emits incremental text from `stream_event` content-block text 
 
 Translation is a separate one-shot helper: `claude -p --output-format json`. The prompt contains the selected word and sentence as JSON data and is written to stdin. The helper checks process status and structured result errors, then returns nonempty result text for the popup.
 
-Both processes run with the configured vault as their working directory. Claude Code loads vault rules through its normal instruction discovery; Mellorin does not pass an explicit system-prompt argument or inject the whole vault. CLI permissions and settings govern its file access and service behavior.
+Both processes run with the configured vault as their working directory. Claude Code loads vault rules through its normal instruction discovery; Mellorin does not replace the system prompt or inject the whole vault. A short appended chat instruction directs JERY to read the local protocol for learning/format tasks and propose format/process changes for the app’s Apply button. This instruction guides behavior; it is not an OS sandbox. CLI permissions and settings govern its file access and service behavior.
 
 ## Configuration and local writes
 

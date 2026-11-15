@@ -69,7 +69,9 @@ async fn sequential_turns_use_real_manager_framing_cwd_and_lifecycle() {
         &dir,
         r##"#!/usr/bin/env python3
 import json, os, sys
-assert sys.argv[1:] == ['--permission-mode', 'acceptEdits', '-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages']
+assert sys.argv[-2] == '--append-system-prompt'
+assert 'mellorin-change' in sys.argv[-1] and 'Apply click' in sys.argv[-1]
+assert sys.argv[1:-2] == ['--permission-mode', 'acceptEdits', '-p', '--input-format', 'stream-json', '--output-format', 'stream-json', '--verbose', '--include-partial-messages']
 assert os.path.isfile('CLAUDE.md')
 print('synthetic routine diagnostic', file=sys.stderr, flush=True)
 for index, line in enumerate(sys.stdin):
