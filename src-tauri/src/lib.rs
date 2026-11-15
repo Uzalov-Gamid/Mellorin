@@ -1,4 +1,5 @@
 mod config;
+mod learning;
 mod subprocess;
 mod vault;
 
@@ -9,6 +10,28 @@ use tauri::{AppHandle, Emitter, State};
 
 pub struct AppState {
     pub subprocess: Arc<SubprocessManager>,
+}
+
+#[tauri::command]
+fn vault_read_text(app: AppHandle, rel_path: String) -> Result<String, String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    vault::read_text(std::path::Path::new(&config.vault_path), &rel_path).map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn vault_list(app: AppHandle, rel_dir: String) -> Result<Vec<vault::VaultEntry>, String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    vault::list(std::path::Path::new(&config.vault_path), &rel_dir).map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn learning_snapshot(app: AppHandle) -> Result<learning::Snapshot, String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    Ok(learning::snapshot(std::path::Path::new(&config.vault_path)))
+}
+#[tauri::command]
+fn learning_init(app: AppHandle, prompt: String) -> Result<(), String> {
+    let config = Config::load(&app).map_err(|e| e.to_string())?;
+    learning::init_protocol(std::path::Path::new(&config.vault_path), &prompt)
+        .map_err(|e| e.to_string())
 }
 
 static VOCAB_WRITE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
@@ -115,6 +138,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             config_get,
             vault_subjects,
+            vault_read_text,
+            vault_list,
+            learning_snapshot,
+            learning_init,
             vocab_add,
             vocab_set_status,
             explain_sentence,

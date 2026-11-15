@@ -1,10 +1,11 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import type { LearningState } from "../learning";
 import type { Subject } from "../subjects";
 import { Ring } from "../ui";
 import { trailState } from "./trail";
 
 function storedCollapsed() { try { return localStorage.getItem("sidebar_collapsed") === "true"; } catch { return false; } }
-export function Sidebar({ subjects, active, connected, footer }: { subjects: Subject[]; active: string; connected: boolean; footer: ReactNode }) {
+export function Sidebar({ subjects, state, active, connected, footer }: { subjects: Subject[]; state?: LearningState | null; active: string; connected: boolean; footer: ReactNode }) {
   const [collapsed, setCollapsed] = useState(() => storedCollapsed() || window.matchMedia("(max-width: 999px)").matches);
   const [open, setOpen] = useState(active.includes("/") ? active.split("/")[0] : subjects[0]?.id);
   function changeCollapsed(value: boolean) {
@@ -30,14 +31,15 @@ export function Sidebar({ subjects, active, connected, footer }: { subjects: Sub
       <button aria-label={collapsed ? "Развернуть панель" : "Свернуть панель"} onClick={() => changeCollapsed(!collapsed)}>{collapsed ? "»" : "«"}</button></div>
     <nav className="sidebar-subjects">{subjects.map(subject => {
       const opened = subject.id === open;
-      const trail = trailState(subject.skills.map(skill => skill.id), active.startsWith(subject.id + "/") ? active.split("/")[1] : "");
+      const progress = state?.subjects.find(item => item.id === subject.id);
+      const trail = trailState(subject.skills.map(skill => skill.id), active.startsWith(subject.id + "/") ? active.split("/")[1] : progress?.trail.find(item => item.status === "current")?.id || "", progress?.trail.filter(item => item.status === "passed").map(item => item.id));
       return <div key={subject.id} className={`subject ${opened ? "subject-open" : ""}`}>
         <button className="subject-heading" aria-label={`Открыть ${subject.name}`} aria-expanded={opened} onClick={() => { setOpen(subject.id); if (collapsed) changeCollapsed(false); }}>
-          <Ring size={collapsed ? 44 : 30} value={0} label={`${subject.name}: нет данных`}>{collapsed ? subject.letter : null}</Ring>
-          {!collapsed && <span><strong>{subject.name}</strong><small>Прогресс: —</small></span>}</button>
+          <Ring size={collapsed ? 44 : 30} value={progress?.percent ?? 0} label={`${subject.name}: ${progress?.percent === undefined ? "нет данных" : progress.percent + "%"}`}>{collapsed ? subject.letter : null}</Ring>
+          {!collapsed && <span><strong>{subject.name}</strong><small>{progress?.percent === undefined ? "Прогресс: —" : `${progress.percent}%`}{progress?.stage ? ` · ${progress.stage}` : ""}{!opened && progress?.next ? ` · ${progress.next}` : ""}</small></span>}</button>
         {opened && <div className={`trail ${collapsed ? "trail-mini" : ""}`} style={{ "--trail-percent": `${trail.linePercent}%` } as CSSProperties}>
           {subject.skills.map((skill, index) => <a key={skill.id} href={`#${subject.id}/${skill.id}`} aria-label={`${subject.name}: ${skill.name}`} aria-current={trail.nodes[index] === "current" ? "page" : undefined} className={`trail-row trail-${trail.nodes[index]}`}>
-            <span className="trail-node" />{!collapsed && <><span>{skill.name}</span><small>{trail.nodes[index] === "current" ? "сейчас" : "—"}</small></>}</a>)}
+            <span className="trail-node" />{!collapsed && <><span>{skill.name}</span><small>{trail.nodes[index] === "current" ? "сейчас" : progress?.trail.find(item => item.id === skill.id)?.text || (trail.nodes[index] === "passed" ? "✓" : "—")}</small></>}</a>)}
         </div>}
       </div>;
     })}</nav>

@@ -38,3 +38,11 @@ These are the defaults used when creating a missing config; existing configurati
 ## Current limits
 
 Chat history and pasted reading text live in frontend memory. There is no persisted conversation browser, vocabulary review deck, or additional study module. Local Markdown storage does not make AI features offline: prompts and translation context reach the CLI service, and CLI tools may access vault files. The synthetic browser demos validate UI presentation with a mocked bridge, not native execution, live service compatibility, or real filesystem persistence.
+
+## Machine-readable learning state
+
+The app polls `.mellorin/state.json` and `.mellorin/today.json` every five seconds. Version 1 schemas are in `docs/state.schema.json` and `docs/today.schema.json`; Rust validates identifiers, arrays, dates, percentages, task flags and counters before returning a snapshot. Missing files produce empty states; invalid files produce visible diagnostics. Totals and progress are never taken from mockups.
+
+`learning_init` creates `.mellorin/README.md` when absent, or appends the versioned protocol to existing instructions without replacing them. It includes both schemas and the exact refresh prompt from `src/prompts.ts`. Today/Refresh sends that prompt only after a user action. CLI access to TickTick depends on the user's CLI configuration.
+
+`vault_read_text` and `vault_list` accept relative paths, reject traversal and canonical paths leaving the configured vault, and enforce file/directory limits (2 MiB text, 10,000 entries). External symlinks are rejected. These reads do not parse arbitrary prose into progress figures. The standard canonical-path checks assume the local vault is not being adversarially rewritten during a read.

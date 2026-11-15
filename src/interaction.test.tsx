@@ -38,6 +38,7 @@ vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn((event: string, callback
 }) }));
 import { Chat } from "./Chat";
 import { useJery } from "./useJery";
+import { useVaultState, type LearningSnapshot } from "./learning";
 import { WordPopup, TextViewer } from "./TextViewer";
 
 type Props = {
@@ -277,6 +278,30 @@ describe("Reading failure handling", () => {
       const tree = render(() => WordPopup({ word: "Hello", sentence: "Hello.", onSaved: vi.fn(), onClose: vi.fn() }));
       await find(tree, e => e.type === "button" && content(e).includes("Послушать")).props.onClick?.();
       expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: "Hello", lang: "en-GB", voice }));
+    } finally { vi.unstubAllGlobals(); }
+  });
+});
+
+
+describe("learning state polling", () => {
+  it("initializes instructions, refreshes files and disposes its timer", async () => {
+    let tick: () => void = () => {};
+    const clear = vi.fn();
+    vi.stubGlobal("window", { setInterval: (callback: () => void) => { tick = callback; return 42; }, clearInterval: clear });
+    let state: ReturnType<typeof useVaultState>;
+    let result: LearningSnapshot = { state: { version: 1, subjects: [] }, today: null, errors: [] as string[] };
+    runtime.invoke.mockImplementation((command: string) => Promise.resolve(command === "learning_snapshot" ? result : undefined));
+    const Harness = () => { state = useVaultState(); return <div />; };
+    try {
+      render(Harness); await flush(); render(Harness);
+      expect(runtime.invoke).toHaveBeenCalledWith("learning_init", { prompt: expect.stringContaining(".mellorin/state.json") });
+      expect(state!.snapshot.state?.subjects).toEqual([]);
+      expect(state!.loading).toBe(false);
+      result = { state: null, today: null, errors: ["invalid JSON"] };
+      tick(); await flush(); render(Harness);
+      expect(state!.snapshot.errors).toEqual(["invalid JSON"]);
+      runtime.cleanups.splice(0).forEach(cleanup => cleanup());
+      expect(clear).toHaveBeenCalledWith(42);
     } finally { vi.unstubAllGlobals(); }
   });
 });
