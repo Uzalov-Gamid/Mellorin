@@ -295,3 +295,54 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 .word-saved { color: var(--mint); font-size: 12px; }
 .reading-paper button.word-unknown { background: var(--butter); border-color: var(--brass); }
 @media (max-width: 1000px) { .reading-paper { padding: 24px; } }
+
+.home-page { display: flex; flex-direction: column; gap: 18px; }
+.home-page h1 { font-size: 26px; color: var(--navy); font-weight: 600; }
+.home-heading { display: flex; justify-content: space-between; align-items: end; flex-wrap: wrap; gap: 16px; }
+.home-heading > span { color: var(--stone); font-size: 13px; }
+.home-primary { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; }
+.home-secondary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.home-page .ui-card { padding: 16px 20px; min-width: 0; }
+.home-page h2 { font-size: 11px; letter-spacing: .1em; font-weight: 400; text-transform: uppercase; color: var(--stone); }
+.home-card-title { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.home-card-title .ui-button { font-size: 11px; padding: 4px 8px; }
+.home-task { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--sand); font-size: 13px; flex-wrap: wrap; }
+.home-task:last-child { border-bottom: 0; }
+.home-task input { accent-color: var(--olive); width: 16px; height: 16px; flex-shrink: 0; }
+.home-task-text { flex: 1; min-width: 120px; }
+.home-task small { color: var(--stone); font-size: 12px; }
+.home-task-text small { display: block; }
+.home-task-done .home-task-text > div { text-decoration: line-through; color: var(--stone); }
+.home-task .ui-button { padding: 4px 14px; font-size: 12px; }
+.home-date { display: flex; align-items: baseline; gap: 12px; margin-top: 16px; }
+.home-date strong { color: var(--ember); font-size: 30px; font-weight: 400; }
+.home-date small { display: block; color: var(--stone); font-size: 11px; }
+.home-section-title { margin-bottom: 10px; }
+.home-subjects { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.home-subject-link { color: inherit; text-decoration: none; min-width: 0; }
+.home-subject-link .ui-card { height: 100%; display: flex; flex-direction: column; gap: 6px; align-items: start; }
+.home-subject-link h3 { font-size: 15px; font-weight: 400; color: var(--pine); }
+.home-subject-link p, .home-subject-link small { font-size: 12px; color: var(--stone); }
+.home-tail-badge { background: var(--butter); color: var(--mustard); padding: 0 8px; border-radius: 9px; font-size: 11px; }
+.home-success { color: var(--olive); font-size: 11px; }
+.home-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--sand); font-size: 13px; }
+.home-row:last-child { border-bottom: 0; }
+.home-row small { display: block; color: var(--stone); font-size: 11px; }
+.home-row strong { font-weight: 400; color: var(--ember); }
+.home-row a { color: var(--emerald); }
+.home-error { border-left: 3px solid var(--rust); padding-left: 10px; }
+.home-week { display: flex; gap: 10px; height: 120px; margin-top: 12px; align-items: end; }
+.home-week-day { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; justify-content: end; font-size: 11px; color: var(--stone); }
+.home-week-day i { display: block; width: 100%; background: var(--flame); border-radius: 4px 4px 0 0; }
+.home-week-today i { background: var(--ember); }
+.home-week-today small { color: var(--ink); }
+.home-empty { font-size: 12px; color: var(--stone); padding-block: 10px; }
+.home-source { color: var(--stone); font-size: 11px; }
+.day-home .ui-ring { background: conic-gradient(var(--olive) var(--progress), var(--sand) 0); }
+.week-dots { display: flex; justify-content: center; flex: 1; gap: 7px; }
+.week-dots > span { width: 10px; height: 10px; border: 1px solid var(--dune); border-radius: 50%; }
+.week-dots .week-dot-done { background: var(--flame); border-color: var(--flame); }
+.week-dots .week-dot-today { outline: 2px solid var(--ember); outline-offset: 2px; }
+@media (max-width: 1250px) { .home-subjects { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 1000px) { .home-secondary { grid-template-columns: 1fr; } .home-primary { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .home-subjects { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

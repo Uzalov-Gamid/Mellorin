@@ -1,11 +1,12 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
-import type { LearningState } from "../learning";
+import { dayTasks, weekActivity } from "../homeData";
+import type { LearningState, TodayState } from "../learning";
 import type { Subject } from "../subjects";
 import { Ring } from "../ui";
 import { trailState } from "./trail";
 
 function storedCollapsed() { try { return localStorage.getItem("sidebar_collapsed") === "true"; } catch { return false; } }
-export function Sidebar({ subjects, state, active, connected, footer }: { subjects: Subject[]; state?: LearningState | null; active: string; connected: boolean; footer: ReactNode }) {
+export function Sidebar({ subjects, state, today, active, connected, footer }: { subjects: Subject[]; state?: LearningState | null; today?: TodayState | null; active: string; connected: boolean; footer: ReactNode }) {
   const [collapsed, setCollapsed] = useState(() => storedCollapsed() || window.matchMedia("(max-width: 999px)").matches);
   const [open, setOpen] = useState(active.includes("/") ? active.split("/")[0] : subjects[0]?.id);
   function changeCollapsed(value: boolean) {
@@ -25,9 +26,11 @@ export function Sidebar({ subjects, state, active, connected, footer }: { subjec
     return () => { media.removeEventListener("change", resize); window.removeEventListener("keydown", keys); };
   }, []);
   useEffect(() => { if (active.includes("/")) setOpen(active.split("/")[0]); }, [active]);
+  const tasks = dayTasks(today), week = weekActivity(state);
+  const done = tasks?.filter(task => task.done).length ?? 0;
   return <aside className={`sidebar ${collapsed ? "sidebar-collapsed" : ""}`} aria-label="Предметы">
-    <div className="sidebar-top"><a href="#home" aria-label="Главная: данные задач пока отсутствуют" className={`day-home ${active === "home" ? "day-home-active" : ""}`}><Ring value={0} label="Задачи: нет данных">—</Ring></a>
-      {!collapsed && <span className="week-empty" title="Данные занятий появятся после обновления состояния">Неделя: —</span>}
+    <div className="sidebar-top"><a href="#home" aria-label={`Главная: ${tasks ? `${done}/${tasks.length} задач` : "данных задач нет"}`} className={`day-home ${active === "home" ? "day-home-active" : ""}`}><Ring size={collapsed ? 40 : 44} value={done} total={tasks?.length ?? 0} label="Задачи сегодня">{tasks ? `${done}/${tasks.length}` : "—"}</Ring></a>
+      {!collapsed && <span className="week-dots" aria-label="Занятия за неделю">{week.map(day => <span key={day.date} title={`${day.date}: ${day.count ?? "нет данных"}`} className={`${day.today ? "week-dot-today" : ""} ${day.count ? "week-dot-done" : ""}`} />)}</span>}
       <button aria-label={collapsed ? "Развернуть панель" : "Свернуть панель"} onClick={() => changeCollapsed(!collapsed)}>{collapsed ? "»" : "«"}</button></div>
     <nav className="sidebar-subjects">{subjects.map(subject => {
       const opened = subject.id === open;
