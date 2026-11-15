@@ -3,7 +3,9 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { vaultList, vaultReadText } from "../learning";
 
+// Listening already lists its own past lessons; the other English screens get this shared list.
 const FOLDERS: Record<string, string> = { english: "English" };
+const SKILLS = ["reading", "writing", "grammar"];
 const SUPER = /[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g;
 
 // Past materials are plain dated files the agent wrote; the app lists them and reads them back.
@@ -18,7 +20,7 @@ export function titleOf(name: string): string {
 
 export function Library({ subject, skill, onReading }: { subject: string; skill: string; onReading?: (text: string) => void }) {
   const folder = FOLDERS[subject];
-  const dir = folder ? `Learning/${folder}/${skill}` : "";
+  const dir = folder && SKILLS.includes(skill) ? `Learning/${folder}/${skill}` : "";
   const [files, setFiles] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
   const [current, setCurrent] = useState("");

@@ -267,6 +267,8 @@ impl SubprocessManager {
         }
         let mut command = Command::new(&config.claude_path);
         crate::ticktick::configure(&mut command, config.jery_ticktick);
+        // Headless runs cannot ask for permission, so read-only web access is granted up front (no shell, no curl).
+        command.args(["--allowedTools", "WebFetch", "WebSearch"]);
         if config.jery_can_edit_vault {
             command.args(["--permission-mode", "acceptEdits"]);
         }
