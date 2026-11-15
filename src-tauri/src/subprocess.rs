@@ -277,6 +277,7 @@ impl SubprocessManager {
                 "--verbose",
                 "--include-partial-messages",
             ])
+            .args(["--append-system-prompt", "You are JERY inside Mellorin. For learning material or format changes first read .mellorin/README.md for the data-only reply protocol. Propose changes to formats and subject process.md through mellorin-change with exact before strings; never write these proposed changes yourself. Only the app applies them after the user's Apply click. Other user-requested vault edits follow normal CLI permissions. Never start lessons or refresh state without a user request."])
             .current_dir(&config.vault_path)
             .kill_on_drop(true)
             .stdin(std::process::Stdio::piped())

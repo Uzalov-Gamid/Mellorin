@@ -19,7 +19,7 @@ The stdout parser emits incremental text from `stream_event` content-block text 
 
 Translation is a separate one-shot helper: `claude -p --output-format json`. The prompt contains the selected word and sentence as JSON data and is written to stdin. The helper checks process status and structured result errors, then returns nonempty result text for the popup.
 
-Both processes run with the configured vault as their working directory. Claude Code loads vault rules through its normal instruction discovery; Mellorin does not pass an explicit system-prompt argument or inject the whole vault. CLI permissions and settings govern its file access and service behavior.
+Both processes run with the configured vault as their working directory. Claude Code loads vault rules through its normal instruction discovery; Mellorin does not replace the system prompt or inject the whole vault. A short appended chat instruction directs JERY to read the local protocol for learning/format tasks and propose format/process changes for the app’s Apply button. This instruction guides behavior; it is not an OS sandbox. CLI permissions and settings govern its file access and service behavior.
 
 ## Configuration and local writes
 
@@ -31,9 +31,9 @@ claude_path = "claude"
 theme = "dark"
 ```
 
-These are the defaults used when creating a missing config; existing configuration is preserved. A leading `~/` in `vault_path` expands to the home directory. The vault directory must exist before launching the CLI. The frontend displays the configured path; there is no settings editor or theme switcher.
+These are the defaults used when creating a missing config; existing configuration is preserved. A leading `~/` in `vault_path` expands to the home directory. The vault directory must exist before launching the CLI. The settings popover displays the configured path and the JERY vault-edit toggle. The app uses the light design tokens.
 
-`vocab_add` serializes writes within the app, validates single-line input, creates the vocabulary directory as needed, and appends `- **word** — sentence` to `vocabulary/mywords-list.md`. Duplicate detection matches the exact word, including case. This is the backend's implemented vault write operation; there is no general vault reader, indexer, or notes/progress manager.
+`vocab_add` serializes writes within the app, validates single-line input, creates the vocabulary directory as needed, and appends `- **word** — sentence` to `vocabulary/mywords-list.md`. Duplicate detection matches the exact word, including case. Other bounded vault commands and state/format operations are described below.
 
 ## Current limits
 
@@ -55,7 +55,7 @@ Home task completion uses a dedicated `today_set_done` command after a user clic
 
 `BlockContext` carries shared reading state, the current JERY message/data, and an explicit user-triggered intent callback. Format strings are escaped React text. Audio accepts only absolute HTTP(S). Code/query fields never execute. `writeBack` sends an intent and answer data to the existing JERY conversation only after a button click; it has no path or generic write command.
 
-Two narrowly scoped Rust commands seed the fixed bundled English format and create deduplicated missing-block notes. Canonical inside-vault directory checks and create-new semantics prevent external symlink writes and replacement of existing files. Seed also appends the format contract once to the vault's `.mellorin/README.md`, preserving previous instructions. Errors stay visible while the last valid/bundled reading format remains usable. Request badges, chat block protocol, apply and rollback remain future stages.
+Two narrowly scoped Rust commands seed the fixed bundled English format and create deduplicated missing-block notes. Canonical inside-vault directory checks and create-new semantics prevent external symlink writes and replacement of existing files. Seed also appends the format contract once to the vault's `.mellorin/README.md`, preserving previous instructions. Errors stay visible while the last valid/bundled reading format remains usable. Missing-block request notes are available; request badges are a later stage. The implemented reply and apply protocols are described below.
 
 ## JERY reply blocks (Stage 8)
 
@@ -68,3 +68,8 @@ The frontend parses accumulated assistant text after each delta using `parseRepl
 The settings popover persists the toggle atomically while preserving other TOML values. Changing it stops the current chat process; the next user request reconnects with the new permission. When false Mellorin omits the flag (the CLI's existing settings still apply). The local task checkbox remains available independently.
 
 Synthetic CLI regression on 2026-11-15 confirmed Write/Edit inside the vault for `.mellorin/today.json`, `formats/english-reading.json` and `Learning/English/reading/process.md`; both a relative `../outside.txt` and absolute outside write were attempted and denied by the CLI. No personal vault or Claude settings were changed.
+||||||| parent of 1925930 (feat: add validated format change apply and rollback)
+
+### Stage 9 integration
+
+`src/changes/ChangePreview.tsx` exports the independent proposal UI; `src/changes/bridge.ts` owns the five `change_*` Tauri calls. `parseReply` now exposes optional `changes` alongside Stage 8 blocks. Render each proposal with `streaming={jery.streaming}` (use the existing active-response flag), route `onChange` to a user-initiated chat revision request, and use `onApplied` to refresh the lesson. `ChangeHistory` provides persisted rollback and explicit crash recovery across restarts. Key previews by response ID plus proposal index/content so a new proposal resets preview state. FormatScreen's existing five-second poll also reloads committed formats. See [jery-protocol.md](jery-protocol.md) for the exact contract and journal recovery behavior. The existing `learning_init` initialization also migrates Stage 8-only vault READMEs by appending Stage 9 once; this work does not change subprocess permissions.

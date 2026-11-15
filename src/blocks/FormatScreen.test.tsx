@@ -17,8 +17,8 @@ type Props = { children?: ReactNode; onClick?: (e: { stopPropagation: () => void
 function elements(node: ReactNode): ReactElement<Props>[] { if (Array.isArray(node)) return node.flatMap(elements); if (!node || typeof node !== 'object' || !('props' in node)) return []; const el = node as ReactElement<Props>; return [el, ...elements(el.props.children)]; }
 function render() { runtime.cursor = 0; const tree = FormatScreen({}); runtime.effects.splice(0).forEach(e => e()); return tree; }
 const flush = async () => { for (let i = 0; i < 10; i++) await Promise.resolve(); };
-beforeEach(() => { vi.useFakeTimers(); runtime.slots = []; runtime.cleanups = []; runtime.effects = []; runtime.invoke.mockReset(); });
-afterEach(() => { runtime.cleanups.forEach(f => f()); vi.useRealTimers(); });
+beforeEach(() => { vi.useFakeTimers(); vi.stubGlobal('window', new EventTarget()); runtime.slots = []; runtime.cleanups = []; runtime.effects = []; runtime.invoke.mockReset(); });
+afterEach(() => { runtime.cleanups.forEach(f => f()); vi.useRealTimers(); vi.unstubAllGlobals(); });
 it('polls layout without losing pasted reading, selected sentence or selected word; deduplicates requests', async () => {
   let source = JSON.stringify(builtin);
   runtime.invoke.mockImplementation((command: string) => {
@@ -41,7 +41,7 @@ it('polls layout without losing pasted reading, selected sentence or selected wo
   expect(elements(ReadingText(context.reading, false)).some(e => e.type === WordPopup)).toBe(false);
   expect(ReadingWord(context.reading)?.type).toBe(WordPopup);
   source = JSON.stringify({ version: 1, steps: [{ id: 'reading', title: 'Updated', blocks: [...builtin.steps[0].blocks, { type: 'future-block', props: {} }, { type: 'future-block', props: {} }] }] });
-  vi.advanceTimersByTime(5000); await flush(); render(); await flush();
+  window.dispatchEvent(new Event('mellorin-format-changed')); await flush(); render(); await flush();
   tree = render(); context = tree.props.value;
   expect(context.reading.text).toBe('Hello world.'); expect(context.reading.editing).toBe(false); expect(context.reading.selected).toBe(0); expect(context.reading.popup).not.toBeNull();
   expect(elements(tree).filter(e => e.type === BlockView)).toHaveLength(5);
