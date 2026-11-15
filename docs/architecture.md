@@ -43,7 +43,7 @@ Chat history and pasted reading text live in frontend memory. There is no persis
 
 The app polls `.mellorin/state.json` and `.mellorin/today.json` every five seconds. Version 1 schemas are in `docs/state.schema.json` and `docs/today.schema.json`; Rust validates identifiers, arrays, dates, percentages, task flags and counters before returning a snapshot. Missing files produce empty states; invalid files produce visible diagnostics. Totals and progress are never taken from mockups.
 
-`learning_init` creates `.mellorin/README.md` when absent, or appends the versioned protocol to existing instructions without replacing them. It includes both schemas and the exact refresh prompt from `src/prompts.ts`. Today/Refresh sends that prompt only after a user action. CLI access to TickTick depends on the user's CLI configuration.
+`learning_init` creates `.mellorin/README.md` when absent, or appends the versioned protocol to existing instructions without replacing them. It includes both schemas and the exact refresh prompt from `src/prompts.ts`. Today/Refresh sends that prompt only after a user action. CLI access to TickTick uses the configured `jery_ticktick` capability and the user's connected Claude account.
 
 `vault_read_text` and `vault_list` accept relative paths, reject traversal and canonical paths leaving the configured vault, and enforce file/directory limits (2 MiB text, 10,000 entries). External symlinks are rejected. These reads do not parse arbitrary prose into progress figures. The standard canonical-path checks assume the local vault is not being adversarially rewritten during a read.
 
@@ -85,3 +85,33 @@ Renderer requests retain the first example and deduplicate by date/block. A miss
 `formats/english-words.json` composes the reusable `word-study` block. The separately validated `.mellorin/english-words.json` is prepared by JERY only on user request and freezes when study starts. Cards and all four quiz rounds run locally. Only explicit preparation/result buttons send intents to JERY; only JERY decides and writes vocabulary statuses. Canonical and legacy vocabulary source paths are retained per word. See [English Words v1](english-words.md) for the exact bounded contract, prompts, refresh behavior and native review setup. The fixed seed creates both English formats without replacing custom files. Both screens remain mounted, preserving Reading state during navigation.
 
 English Listening uses its own seeded format and reusable `listening-lesson` block; see [English Listening v1](english-listening.md) for its bounded lesson schema and synthetic native fixture. Lesson reads and navigation never invoke a model. Explicit reload freezes a new validated lesson; native media controls load audio only through user playback.
+
+## TickTick capability (Stage 9c)
+
+`jery_ticktick = "full"` is the default. Chat and one-shot helpers both add
+`--allowedTools mcp__claude_ai_TickTick` for full access. `read` adds only
+server-scoped `list_*`, `get_*`, `filter_tasks`, `search*`,
+`query_calendar_events`, `list_calendars`, and `fetch` allow rules; `off` adds no
+TickTick rule. These flags grant capability, not a request to use it. Existing
+Claude allow/deny settings remain authoritative; `off` does not revoke an
+independent permission already granted in Claude. Vault instructions continue
+to govern when JERY may edit tasks. No bypass-permissions flag is added.
+
+Prompts remain on stdin, so variadic `--allowedTools` cannot consume them.
+Changing the mode persists it atomically while preserving other TOML keys and
+stops the current chat; the next user request restarts it. Settings checks
+connection with `claude mcp list` in the vault, bounded to 15 seconds, without a
+model request. Only connected/authentication/missing/unavailable status reaches
+the UI, not connector output or task contents. Check failures show a hint for
+Claude/network/limits. Chat errors remain visible through the existing strip.
+Home refresh requests JERY-written state; the app never invents TickTick data.
+
+MCP permission syntax: [Claude Code permission rules](https://code.claude.com/docs/en/permissions#mcp).
+Opt-in synthetic-vault probe (never run in CI):
+
+```bash
+MELLORIN_LIVE_CLAUDE="$(command -v claude)" cargo test --manifest-path src-tauri/Cargo.toml live_ticktick_read_only_probe -- --ignored
+```
+
+The probe lists projects once and asserts only a success marker; it prints no
+personal project/task data and performs no service writes.

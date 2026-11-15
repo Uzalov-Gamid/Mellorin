@@ -2,6 +2,15 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 use tauri::Manager;
 
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum TickTickMode {
+    #[default]
+    Full,
+    Read,
+    Off,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(default)]
 pub struct Config {
@@ -9,6 +18,7 @@ pub struct Config {
     pub claude_path: String,
     pub theme: String,
     pub jery_can_edit_vault: bool,
+    pub jery_ticktick: TickTickMode,
 }
 
 impl Default for Config {
@@ -18,6 +28,7 @@ impl Default for Config {
             claude_path: "claude".into(),
             theme: "dark".into(),
             jery_can_edit_vault: true,
+            jery_ticktick: TickTickMode::Full,
         }
     }
 }
@@ -31,14 +42,26 @@ impl Config {
         Self::save_edit_permission(&app.path().app_config_dir()?, enabled)
     }
 
+    pub fn set_ticktick(app: &tauri::AppHandle, mode: TickTickMode) -> anyhow::Result<()> {
+        Self::save_value(
+            &app.path().app_config_dir()?,
+            "jery_ticktick",
+            toml::Value::try_from(mode)?,
+        )
+    }
+
     fn save_edit_permission(dir: &Path, enabled: bool) -> anyhow::Result<()> {
+        Self::save_value(dir, "jery_can_edit_vault", toml::Value::Boolean(enabled))
+    }
+
+    fn save_value(dir: &Path, key: &str, value: toml::Value) -> anyhow::Result<()> {
         Self::load_from(dir)?;
         let path = dir.join("mellorin.toml");
         let mut document: toml::Value = toml::from_str(&std::fs::read_to_string(&path)?)?;
         document
             .as_table_mut()
             .ok_or_else(|| anyhow::anyhow!("config must be a table"))?
-            .insert("jery_can_edit_vault".into(), toml::Value::Boolean(enabled));
+            .insert(key.into(), value);
         let mut temporary = tempfile::NamedTempFile::new_in(dir)?;
         use std::io::Write;
         temporary
@@ -77,6 +100,28 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn ticktick_mode_is_validated_and_preserves_other_keys() {
+        let dir = tempfile::tempdir().unwrap();
+        Config::load_from(dir.path()).unwrap();
+        Config::save_value(
+            dir.path(),
+            "jery_ticktick",
+            toml::Value::String("read".into()),
+        )
+        .unwrap();
+        assert_eq!(
+            Config::load_from(dir.path()).unwrap().jery_ticktick,
+            TickTickMode::Read
+        );
+        Config::save_edit_permission(dir.path(), false).unwrap();
+        assert_eq!(
+            Config::load_from(dir.path()).unwrap().jery_ticktick,
+            TickTickMode::Read
+        );
+        assert!(toml::from_str::<Config>("jery_ticktick = 'unknown'").is_err());
+    }
 
     #[test]
     fn creates_defaults_and_preserves_existing_config() {
