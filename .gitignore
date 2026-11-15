@@ -5,3 +5,6 @@ dist/
 *.local
 mellorin.toml
 .env
+
+# Generated visual QA artifacts
+docs/qa/
