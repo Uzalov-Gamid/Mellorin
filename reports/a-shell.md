@@ -20,3 +20,5 @@ Exact root integration/restart state:
 - Run final-head CI and native regression before merge. Do not merge this PR solely from browser QA. No second screen work started.
 
 Budget record at stage start (both valid at epoch 1794765992): primary used_percent=14, window_minutes=300, resets_at=1794783118; secondary used_percent=2, window_minutes=10080, resets_at=1795369918. Below start thresholds.
+
+Root integration: enabled native Overlay/hiddenTitle, traffic lights x16/y18 and start-dragging permission in the same PR. Native verification pending. Theme event remains pending Settings integration; full visual acceptance remains open.
