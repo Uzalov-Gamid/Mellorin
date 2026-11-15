@@ -47,18 +47,42 @@ pub fn snapshot(root: &Path) -> anyhow::Result<Snapshot> {
     Ok(Snapshot { open })
 }
 fn is_closed(body: &str) -> bool {
-    body.lines().any(|line| {
-        matches!(
-            line.trim().to_ascii_lowercase().as_str(),
-            "status: closed" | "status: done"
-        )
-    })
+    let mut fence: Option<char> = None;
+    for line in body.lines() {
+        let line = line.trim();
+        let marker = if line.starts_with("```") {
+            Some('`')
+        } else if line.starts_with("~~~") {
+            Some('~')
+        } else {
+            None
+        };
+        if let Some(marker) = marker {
+            if fence == Some(marker) {
+                fence = None;
+            } else if fence.is_none() {
+                fence = Some(marker);
+            }
+            continue;
+        }
+        if fence.is_none()
+            && matches!(
+                line.to_ascii_lowercase().as_str(),
+                "status: closed" | "status: done"
+            )
+        {
+            return true;
+        }
+    }
+    false
 }
 #[cfg(test)]
 mod tests {
     use super::*;
     #[test]
     fn missing_empty_open_closed_and_external_notes() {
+        assert!(!is_closed("```md\nStatus: closed\n```"));
+        assert!(is_closed("---\nstatus: done\n---"));
         let d = tempfile::tempdir().unwrap();
         assert!(snapshot(d.path()).unwrap().open.is_empty());
         std::fs::create_dir(d.path().join("app-requests")).unwrap();
