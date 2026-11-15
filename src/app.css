@@ -393,3 +393,23 @@ textarea::placeholder, input::placeholder { color: var(--stone); }
 .words-paper > button:last-of-type { align-self: flex-end; background: var(--ember); color: var(--paper); border-color: var(--ember); padding: 8px 20px; font-size: 14px; }
 .words-options button { align-self: stretch; font-size: 15px; }
 .words-dots span { width: 8px; height: 8px; border-radius: 50%; }
+
+.listening-lesson { display:flex; flex-direction:column; gap:16px; }
+.listening-columns { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); gap:16px; }
+.listening-paper { background:var(--paper); border:1px solid var(--sand); border-radius:12px; padding:28px 34px; display:flex; flex-direction:column; gap:16px; }
+.listening-lesson h2,.listening-lesson h3 { font-size:14px; margin:0; color:var(--stone); }
+.listening-lesson button,.listening-lesson select { font:inherit; color:var(--ember); border:1px solid var(--ember); border-radius:8px; padding:7px 12px; background:var(--paper); cursor:pointer; }
+.listening-lesson button:disabled { opacity:.5; cursor:default; }
+.listening-actions { display:flex; flex-wrap:wrap; gap:12px; }
+.listening-lesson label { display:flex; flex-direction:column; gap:6px; }
+.listening-lesson textarea { font:inherit; color:var(--ink); background:var(--cream); border:1px solid var(--sand); border-radius:8px; padding:10px; min-height:65px; resize:vertical; }
+.listening-player { border:1px solid var(--dune); border-radius:12px; padding:16px 20px; display:flex; flex-direction:column; gap:12px; }
+.listening-player audio { width:100%; }
+.listening-player small { color:var(--stone); overflow-wrap:anywhere; }
+.listening-lesson li { margin-bottom:12px; }
+.listening-script { border:1px dashed var(--dune); border-radius:12px; padding:22px 24px; min-height:220px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.listening-script.locked { display:grid; place-items:center; color:var(--ash); }
+.listening-past > div { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+@media(max-width:800px) { .listening-columns { grid-template-columns:1fr; } .listening-paper { padding:22px; } }
+.listening-columns aside { display:flex; flex-direction:column; gap:16px; }
+.listening-columns .listening-past { padding:16px 20px; }
