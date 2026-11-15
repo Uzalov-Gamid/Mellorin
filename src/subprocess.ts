@@ -38,3 +38,13 @@ export type TickTickMode = "full" | "read" | "off";
 export type TickTickStatus = "connected" | "needs_authentication" | "not_found" | "unavailable";
 export const setTickTick = (mode: TickTickMode): Promise<void> => invoke("config_set_ticktick", { mode });
 export const getTickTickStatus = (): Promise<TickTickStatus> => invoke("ticktick_status");
+
+export interface VocabularyEntry {
+  word: string;
+  translation: string;
+  source: string;
+  added: string;
+  status: VocabStatus;
+  path: string;
+}
+export const vocabList = (): Promise<VocabularyEntry[]> => invoke<VocabularyEntry[]>("vocab_list");
